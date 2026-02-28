@@ -21,13 +21,19 @@ MAX_WEIGHT = 1.0
 CASH_PROXY = "SHV"
 BOND_ASSETS = ["VGIT", "BND", "BNDX"]
 
+
 def get_data(symbols):
+    """
+    """
     end_date = datetime.now()
     start_date = end_date - timedelta(days=1200) 
     data = yf.download(symbols, auto_adjust=True, start=start_date, end=end_date)['Close']
     return data
 
+
 def calculate_momentum(series):
+    """
+    """
     returns = []
     for lb in MOMENTUM_LOOKBACKS:
         if len(series) > lb:
@@ -35,7 +41,10 @@ def calculate_momentum(series):
             returns.append(ret)
     return np.mean(returns) if returns else -np.inf
 
+
 def get_cvar(series, alpha=0.95):
+    """
+    """
     if len(series) < 252:
         return np.nan
     rets = series.pct_change().dropna().tail(CVAR_LOOKBACK)
@@ -43,7 +52,10 @@ def get_cvar(series, alpha=0.95):
     tail_losses = rets[rets <= var_threshold]
     return abs(tail_losses.mean()) if not tail_losses.empty else np.nan
 
+
 def run_strategy():
+    """
+    """
     print(f"Fetching data for {len(ALL_SYMBOLS)} assets...")
     data = get_data(ALL_SYMBOLS)
     

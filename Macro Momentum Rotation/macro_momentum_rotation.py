@@ -2,8 +2,11 @@ from AlgorithmImports import *
 import numpy as np
 
 class AbsoluteRelativeMomentum(QCAlgorithm):
-
+    """
+    """
     def Initialize(self):
+        """
+        """
         self.SetStartDate(2012, 1, 1)
         self.SetCash(1_000_000)
         self.Settings.SeedInitialPrices = True
@@ -16,7 +19,7 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
         self.vgit = self.AddEquity("VGIT", Resolution.Daily).Symbol
         self.gld  = self.AddEquity("GLD",  Resolution.Daily).Symbol
         self.dbc  = self.AddEquity("DBC",  Resolution.Daily).Symbol
-        self.bil  = self.AddEquity("SHV",  Resolution.Daily).Symbol # Cash Proxy
+        self.bil  = self.AddEquity("SHV",  Resolution.Daily).Symbol
         self.vea  = self.AddEquity("VEA",  Resolution.Daily).Symbol
         self.vwo  = self.AddEquity("VWO",  Resolution.Daily).Symbol
         self.bnd  = self.AddEquity("BND",  Resolution.Daily).Symbol
@@ -72,7 +75,10 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
         warmup_days = max(max(self.momentum_lookbacks) + 1, self.sma_period, self.cvar_lookback + 1)
         self.SetWarmup(warmup_days, Resolution.Daily)
 
+
     def Momentum(self, symbol, closes):
+        """
+        """
         if symbol not in closes.columns: return -np.inf
         px = closes[symbol].dropna()
         if len(px) < max(self.momentum_lookbacks) + 1: return -np.inf
@@ -82,7 +88,10 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
             for lb in self.momentum_lookbacks
         ]))
 
+
     def PassesTrendFilter(self, symbol, closes):
+        """
+        """
         if symbol == self.bil: return True
         if symbol not in closes.columns: return False
         px = closes[symbol].dropna()
@@ -91,7 +100,10 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
         sma = px.iloc[-period:].mean()
         return px.iloc[-1] > sma
 
+
     def GetCVaR(self, symbol, closes, alpha=0.95):
+        """
+        """
         if symbol not in closes.columns: return np.nan
         px = closes[symbol].dropna()
         if len(px) < 252: return np.nan
@@ -101,7 +113,10 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
         if tail_losses.empty: return np.nan
         return float(abs(tail_losses.mean()))
 
+
     def Rebalance(self):
+        """
+        """
         if self.IsWarmingUp: return
 
         etf_history = self.history(self.etfs, max(self.cvar_lookback + 1, self.sma_period), 
