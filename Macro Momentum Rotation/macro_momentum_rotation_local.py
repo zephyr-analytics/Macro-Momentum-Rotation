@@ -4,22 +4,26 @@ import numpy as np
 from datetime import datetime, timedelta
 
 # ============================
-# Config & Parameters
+# Config aligned with QC Algo
 # ============================
-ASSETS = ["VT", "VGLT", "VGIT", "GLD", "DBC", "BIL", "HYG", "VCIT", "VCLT", "VCSH", "VGSH"]
-CRYPTO = ["IBIT"]
-ALL_SYMBOLS = ASSETS + CRYPTO
+ETFS = ["VTI", "VGLT", "VGIT", "GLD", "DBC", "SHV", "VEA", "VWO", "BND", "BNDX", "EMB"]
+SECTORS = ["IXP", "RXI", "KXI", "IXC", "IXG", "IXJ", "EXI", "IXN", "MXI", "REET", "JXI"]
+CRYPTO = ["IBIT"] 
+ALL_SYMBOLS = ETFS + SECTORS + CRYPTO
 
+TOP_N = 3  # <--- Updated: Pick top X assets
 MOMENTUM_LOOKBACKS = [21, 63, 126, 189, 252]
 SMA_PERIOD = 168
-VOL_LOOKBACK = 252
-TARGET_VOL = 0.12
+BOND_SMA_PERIOD = 126
+CVAR_LOOKBACK = 756
+TARGET_CVAR = 0.03
 MAX_WEIGHT = 1.0
-CASH_PROXY = "BIL"
+CASH_PROXY = "SHV"
+BOND_ASSETS = ["VGIT", "BND", "BNDX"]
 
 def get_data(symbols):
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=500)  # Enough for lookbacks
+    start_date = end_date - timedelta(days=1200) 
     data = yf.download(symbols, auto_adjust=True, start=start_date, end=end_date)['Close']
     return data
 
@@ -31,69 +35,83 @@ def calculate_momentum(series):
             returns.append(ret)
     return np.mean(returns) if returns else -np.inf
 
-def get_realized_vol(series):
-    if len(series) < VOL_LOOKBACK + 1:
+def get_cvar(series, alpha=0.95):
+    if len(series) < 252:
         return np.nan
-    returns = np.log(series / series.shift(1)).dropna()
-    vol = returns.tail(VOL_LOOKBACK).std() * np.sqrt(252)
-    return vol
+    rets = series.pct_change().dropna().tail(CVAR_LOOKBACK)
+    var_threshold = np.percentile(rets, (1 - alpha) * 100)
+    tail_losses = rets[rets <= var_threshold]
+    return abs(tail_losses.mean()) if not tail_losses.empty else np.nan
 
 def run_strategy():
     print(f"Fetching data for {len(ALL_SYMBOLS)} assets...")
     data = get_data(ALL_SYMBOLS)
     
-    # Eligibility checks
+    # 1. Eligibility (Trend Filter)
     eligible = []
-    bil_series = data[CASH_PROXY].dropna()
-    # Absolute 6M return for BIL
-    bil_6m_ret = (bil_series.iloc[-1] / bil_series.iloc[-127]) - 1 if len(bil_series) > 127 else -np.inf
-
-    print("\n--- Strategy Screening ---")
+    print("\n--- Trend Filter Screening ---")
     for symbol in ALL_SYMBOLS:
+        if symbol not in data.columns: continue
         px = data[symbol].dropna()
-        if len(px) < max(MOMENTUM_LOOKBACKS + [SMA_PERIOD, VOL_LOOKBACK]):
-            continue
+        period = BOND_SMA_PERIOD if symbol in BOND_ASSETS else SMA_PERIOD
         
-        # 1. SMA Gate
-        sma = px.rolling(SMA_PERIOD).mean().iloc[-1]
-        passes_sma = (px.iloc[-1] > sma) or (symbol == CASH_PROXY)
-        
-        # 2. Absolute Return Filter (Beat BIL 6M return)
-        abs_6m_ret = (px.iloc[-1] / px.iloc[-127]) - 1 if len(px) > 127 else -np.inf
-        beats_cash = (abs_6m_ret > bil_6m_ret) or (symbol == CASH_PROXY)
-        
-        if passes_sma and beats_cash:
+        if len(px) < period: continue
+            
+        sma = px.rolling(period).mean().iloc[-1]
+        if px.iloc[-1] > sma or symbol == CASH_PROXY:
             eligible.append(symbol)
-            print(f"[ELIGIBLE] {symbol} | 6M Ret: {abs_6m_ret:.2%}")
+            print(f"[PASSED] {symbol}")
         else:
-            reason = "SMA" if not passes_sma else "Abs Return"
-            print(f"[EXCLUDED] {symbol} | Failed {reason}")
+            print(f"[FAILED] {symbol}")
 
-    if not eligible:
-        print("\nNo assets eligible. Moving to 100% Cash (BIL).")
-        return {CASH_PROXY: 1.0}
-
-    # 3. Momentum Ranking
-    scores = {s: calculate_momentum(data[s].dropna()) for s in eligible}
-    winner = max(scores, key=scores.get)
-    
-    print(f"\nWinner Selected: {winner} (Score: {scores[winner]:.4f})")
-
-    # 4. Vol Targeting
-    if winner == CASH_PROXY:
-        weight = 1.0
+    # 2. Breadth Filter (Threshold updated to 10)
+    num_eligible = len(eligible)
+    if num_eligible < 10:
+        print(f"\nLOW BREADTH: Only {num_eligible} assets passed. Moving to {CASH_PROXY}.")
+        final_allocations = {CASH_PROXY: 1.0}
     else:
-        vol = get_realized_vol(data[winner].dropna())
-        weight = min(MAX_WEIGHT, TARGET_VOL / vol) if vol > 0 else 0
-        print(f"Realized Vol: {vol:.2%} | Target Weight: {weight:.2%}")
+        # 3. Momentum Ranking for Top N
+        scores = {s: calculate_momentum(data[s].dropna()) for s in eligible}
+        sorted_assets = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        winners = [x[0] for x in sorted_assets[:TOP_N]]
 
-    cash_weight = 1.0 - weight
-    
-    # Output Final Allocation
+        print(f"\nTop {TOP_N} Selected: {winners} (Breadth: {num_eligible})")
+
+        # 4. CVaR Targeting & Final Weighting
+        final_allocations = {}
+        total_allocated_weight = 0
+
+        for winner in winners:
+            if winner == CASH_PROXY:
+                indiv_weight = 1.0 / TOP_N
+            else:
+                asset_cvar = get_cvar(data[winner].dropna())
+                
+                if np.isnan(asset_cvar) or asset_cvar == 0:
+                    indiv_weight = 0.0
+                else:
+                    # Risk budget per slot (Target CVaR / N)
+                    slot_target = TARGET_CVAR / TOP_N
+                    raw_weight = min(MAX_WEIGHT / TOP_N, slot_target / asset_cvar)
+                    
+                    # Crypto Cap (15%)
+                    if winner in CRYPTO:
+                        indiv_weight = min(raw_weight, 0.15)
+                    else:
+                        indiv_weight = raw_weight
+            
+            final_allocations[winner] = indiv_weight
+            total_allocated_weight += indiv_weight
+
+        # 5. Fill remainder with Cash Proxy
+        cash_fill = 1.0 - total_allocated_weight
+        if cash_fill > 0.001:
+            final_allocations[CASH_PROXY] = final_allocations.get(CASH_PROXY, 0) + cash_fill
+
     print("\n--- Final Target Allocation ---")
-    print(f"{winner}: {weight:.2%}")
-    if cash_weight > 0:
-        print(f"{CASH_PROXY} (Cash): {cash_weight:.2%}")
+    for asset, weight in sorted(final_allocations.items(), key=lambda x: x[1], reverse=True):
+        if weight > 0.001:
+            print(f"{asset:6}: {weight:.2%}")
 
 if __name__ == "__main__":
     run_strategy()
