@@ -163,6 +163,6 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
         cash_weight = 1.0 - total_allocated_weight
         if cash_weight > 0.01:
             self.SetHoldings(self.bil, cash_weight)
-            debug_msg += f"| BIL_FILL: {cash_weight:.2f}"
+            debug_msg += f"| CASH: {cash_weight:.2f}"
 
         self.Debug(debug_msg)
