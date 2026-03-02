@@ -58,7 +58,7 @@ def run_strategy():
     """
     print(f"Fetching data for {len(ALL_SYMBOLS)} assets...")
     data = get_data(ALL_SYMBOLS)
-    
+
     # 1. Eligibility (Trend Filter)
     eligible = []
     print("\n--- Trend Filter Screening ---")
@@ -68,7 +68,7 @@ def run_strategy():
         period = BOND_SMA_PERIOD if symbol in BOND_ASSETS else SMA_PERIOD
         
         if len(px) < period: continue
-            
+
         sma = px.rolling(period).mean().iloc[-1]
         if px.iloc[-1] > sma or symbol == CASH_PROXY:
             eligible.append(symbol)
