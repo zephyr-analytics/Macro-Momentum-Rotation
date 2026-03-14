@@ -1,183 +1,308 @@
 from AlgorithmImports import *
 import numpy as np
 
+
 class AbsoluteRelativeMomentum(QCAlgorithm):
-    """
-    """
-    def Initialize(self):
-        """
-        """
-        self.SetStartDate(2012, 1, 1)
-        self.SetCash(1_000_000)
-        self.Settings.SeedInitialPrices = True
+    """Absolute + relative momentum strategy with volatility targeting.
 
-        # ============================
-        # Core Assets & Benchmarks
-        # ============================
-        self.vt   = self.AddEquity("VTI",   Resolution.Daily).Symbol
-        self.vglt = self.AddEquity("VGLT", Resolution.Daily).Symbol
-        self.vgit = self.AddEquity("VGIT", Resolution.Daily).Symbol
-        self.gld  = self.AddEquity("GLD",  Resolution.Daily).Symbol
-        self.dbc  = self.AddEquity("DBC",  Resolution.Daily).Symbol
-        self.bil  = self.AddEquity("SHV",  Resolution.Daily).Symbol
-        self.vea  = self.AddEquity("VEA",  Resolution.Daily).Symbol
-        self.vwo  = self.AddEquity("VWO",  Resolution.Daily).Symbol
-        self.bnd  = self.AddEquity("BND",  Resolution.Daily).Symbol
-        self.bndx = self.AddEquity("BNDX", Resolution.Daily).Symbol
-        self.emb  = self.AddEquity("EMB",  Resolution.Daily).Symbol
-        self.btc  = self.AddCrypto("BTCUSD", Resolution.Daily).Symbol
+    Ranks a universe of ETFs and crypto by composite momentum, applies an
+    absolute-return filter against cash (BIL), gates entries with a
+    simple-moving-average trend filter, and sizes the winning asset via
+    realized-volatility targeting. Any unallocated weight is held in BIL.
+    """
 
-        # ============================
-        # iShares Global Sector ETFs
-        # ============================
-        self.sectors = [
-            self.AddEquity("IXP", Resolution.Daily).Symbol, # Comm Services
-            self.AddEquity("RXI", Resolution.Daily).Symbol, # Consumer Disc
-            self.AddEquity("KXI", Resolution.Daily).Symbol, # Consumer Staples
-            self.AddEquity("IXC", Resolution.Daily).Symbol, # Energy
-            self.AddEquity("IXG", Resolution.Daily).Symbol, # Financials
-            self.AddEquity("IXJ", Resolution.Daily).Symbol, # Healthcare
-            self.AddEquity("EXI", Resolution.Daily).Symbol, # Industrials
-            self.AddEquity("IXN", Resolution.Daily).Symbol, # Technology
-            self.AddEquity("MXI", Resolution.Daily).Symbol, # Materials
-            self.AddEquity("REET", Resolution.Daily).Symbol,# Real Estate
-            self.AddEquity("JXI", Resolution.Daily).Symbol  # Utilities
+    def initialize(self) -> None:
+        """Set up the algorithm: universe, config, schedule, and warm-up."""
+        self.set_start_date(2012, 1, 1)
+        self.set_cash(100_000)
+
+        # ------------------------------------------------------------------ #
+        # Universe
+        # ------------------------------------------------------------------ #
+        self._vt   = self.add_equity("VT",   Resolution.DAILY).symbol
+        self._vgit = self.add_equity("VGIT", Resolution.DAILY).symbol
+        self._bndx = self.add_equity("BNDX", Resolution.DAILY).symbol
+        self._gld  = self.add_equity("GLD",  Resolution.DAILY).symbol
+        self._dbc  = self.add_equity("DBC",  Resolution.DAILY).symbol
+        self._bil  = self.add_equity("BIL",  Resolution.DAILY).symbol
+        self._bnd = self.add_equity("BND", Resolution.DAILY).symbol
+        self._btc  = self.add_crypto("BTCUSD", Resolution.DAILY).symbol
+
+        self._etfs: list = [
+            self._vt, self._bnd, self._bndx, self._vgit,
+            self._gld, self._dbc, self._bil
         ]
 
-        self.etfs = [
-            self.vt, self.vglt, self.vgit, self.gld, self.dbc,
-            self.bil, self.vea, self.vwo, self.bnd, self.bndx, self.emb
-        ] + self.sectors
+        self._assets: list = self._etfs + [self._btc]
 
-        self.bond_assets = [self.vgit, self.bnd, self.bndx]
-        self.assets = self.etfs + [self.btc]
+        for symbol in self._assets:
+            self.securities[symbol].set_fee_model(ConstantFeeModel(0))
 
-        for symbol in self.assets:
-            self.Securities[symbol].SetFeeModel(ConstantFeeModel(0))
+        # ------------------------------------------------------------------ #
+        # Hyperparameters
+        # ------------------------------------------------------------------ #
+        self._momentum_lookbacks: list[int] = [21, 63, 126, 189, 252]
+        self._max_lookback: int = max(self._momentum_lookbacks)
 
-        # ============================
-        # Config
-        # ============================
-        self.top_n = 3
-        self.momentum_lookbacks = [21, 63, 126, 189, 252]
-        self.sma_period = 168
-        self.bond_sma_period = 126
-        self.cvar_lookback = 756
-        self.target_cvar = 0.03
-        self.max_weight = 1.0
+        self._sma_period:   int   = 168
+        self._sma_overrides: dict = {
+            self._bnd:  126,
+            self._bndx: 126,
+            self._vgit: 126,
+        }
+        self._vol_lookback: int   = 63
+        self._target_vol:   float = 0.16
+        self._max_weight:   float = 1.0
 
-        self.Schedule.On(
-            self.DateRules.MonthStart(self.vt),
-            self.TimeRules.BeforeMarketClose(self.vt, 120),
-            self.Rebalance
+        # ------------------------------------------------------------------ #
+        # Schedule
+        # ------------------------------------------------------------------ #
+        self.schedule.on(
+            self.date_rules.month_start(self._vt),
+            self.time_rules.after_market_open(self._vt, 120),
+            self._rebalance,
         )
 
-        warmup_days = max(max(self.momentum_lookbacks) + 1, self.sma_period, self.cvar_lookback + 1)
-        self.SetWarmup(warmup_days, Resolution.Daily)
+        self.set_warmup(
+            max(self._max_lookback + 1, self._sma_period, self._vol_lookback + 1),
+            Resolution.DAILY,
+        )
 
+    # ---------------------------------------------------------------------- #
+    # Signal helpers
+    # ---------------------------------------------------------------------- #
 
-    def Momentum(self, symbol, closes):
+    def _momentum(self, symbol, closes) -> float:
+        """Compute composite momentum as the mean return over multiple lookbacks.
+
+        Parameters
+        ----------
+        symbol : Symbol
+            The asset whose momentum is being computed.
+        closes : pd.DataFrame
+            Wide-format DataFrame of close prices; columns are Symbol objects.
+
+        Returns
+        -------
+        float
+            Mean total return across all ``_momentum_lookbacks``.
+            Returns ``-np.inf`` when data are insufficient.
         """
-        """
-        if symbol not in closes.columns: return -np.inf
+        if symbol not in closes.columns:
+            return -np.inf
+
         px = closes[symbol].dropna()
-        if len(px) < max(self.momentum_lookbacks) + 1: return -np.inf
+        if len(px) < self._max_lookback + 1:
+            return -np.inf
 
         return float(np.mean([
             px.iloc[-1] / px.iloc[-(lb + 1)] - 1
-            for lb in self.momentum_lookbacks
+            for lb in self._momentum_lookbacks
         ]))
 
+    def _passes_sma_gate(self, symbol, closes) -> bool:
+        """Check whether the asset's last close is above its long-run SMA.
 
-    def PassesTrendFilter(self, symbol, closes):
+        BIL is unconditionally exempt from this filter. BND, BNDX, and VGIT
+        use a 126-day SMA; all other assets use the default ``_sma_period``.
+
+        Parameters
+        ----------
+        symbol : Symbol
+            The asset to test.
+        closes : pd.DataFrame
+            Wide-format DataFrame of close prices.
+
+        Returns
+        -------
+        bool
+            ``True`` if the asset passes (or is BIL), ``False`` otherwise.
         """
-        """
-        if symbol == self.bil: return True
-        if symbol not in closes.columns: return False
+        if symbol == self._bil:
+            return True
+
+        if symbol not in closes.columns:
+            return False
+
         px = closes[symbol].dropna()
-        period = self.bond_sma_period if symbol in self.bond_assets else self.sma_period
-        if len(px) < period: return False
-        sma = px.iloc[-period:].mean()
-        return px.iloc[-1] > sma
+        sma_period = self._sma_overrides.get(symbol, self._sma_period)
 
+        if len(px) < sma_period:
+            return False
 
-    def GetCVaR(self, symbol, closes, alpha=0.95):
+        sma = px.rolling(sma_period).mean().iloc[-1]
+        if np.isnan(sma):
+            return False
+
+        return bool(px.iloc[-1] > sma)
+
+    def _realized_vol(self, symbol, closes) -> float:
+        """Estimate annualised realised volatility from log returns.
+
+        Parameters
+        ----------
+        symbol : Symbol
+            The asset to evaluate.
+        closes : pd.DataFrame
+            Wide-format DataFrame of close prices.
+
+        Returns
+        -------
+        float
+            Annualised volatility (σ × √252).
+            Returns ``np.nan`` when data are insufficient.
         """
-        """
-        if symbol not in closes.columns: return np.nan
+        if symbol not in closes.columns:
+            return np.nan
+
         px = closes[symbol].dropna()
-        if len(px) < 252: return np.nan
-        rets = px.pct_change().dropna().tail(self.cvar_lookback)
-        var_threshold = np.percentile(rets, (1 - alpha) * 100)
-        tail_losses = rets[rets <= var_threshold]
-        if tail_losses.empty: return np.nan
-        return float(abs(tail_losses.mean()))
+        if len(px) < self._vol_lookback + 1:
+            return np.nan
 
+        log_rets = np.log(px / px.shift(1)).dropna()
+        if len(log_rets) < self._vol_lookback:
+            return np.nan
 
-    def Rebalance(self):
+        vol = log_rets.tail(self._vol_lookback).std()
+        if vol is None or np.isnan(vol):
+            return np.nan
+
+        return float(vol * np.sqrt(252))
+
+    def _absolute_return_6m(self, symbol, closes) -> float:
+        """Compute the trailing six-month (126-day) total return.
+
+        Parameters
+        ----------
+        symbol : Symbol
+            The asset to evaluate.
+        closes : pd.DataFrame
+            Wide-format DataFrame of close prices.
+
+        Returns
+        -------
+        float
+            Six-month return as a decimal.
+            Returns ``-np.inf`` when data are insufficient.
         """
+        if symbol not in closes.columns:
+            return -np.inf
+
+        px = closes[symbol].dropna()
+        if len(px) < 127:
+            return -np.inf
+
+        return float(px.iloc[-1] / px.iloc[-127] - 1)
+
+    # ---------------------------------------------------------------------- #
+    # Rebalance
+    # ---------------------------------------------------------------------- #
+
+    def _rebalance(self) -> None:
+        """Monthly rebalance: filter, rank, size, and trade.
+
+        ETFs and BTC are evaluated entirely independently — separate history
+        pulls, separate close DataFrames, and separate eligibility checks —
+        before being combined only at the final ranking step.
+
+        Steps
+        -----
+        1. Pull total-return closes for ETFs; pull raw closes for BTC.
+        2. Screen each universe independently via SMA gate and absolute-return
+           vs. cash filter.
+        3. Merge the two eligible lists, rank by composite momentum, and select
+           the top asset.
+        4. Size the winner using volatility targeting, using its own closes;
+           park remainder in BIL.
         """
-        if self.IsWarmingUp: return
-
-        etf_history = self.history(self.etfs, max(self.cvar_lookback + 1, self.sma_period), 
-                                   Resolution.Daily, data_normalization_mode=DataNormalizationMode.TotalReturn)
-        if etf_history.empty: return
-        etf_closes = etf_history["close"].unstack(0)
-
-        btc_history = self.history([self.btc], max(self.cvar_lookback + 1, self.sma_period), Resolution.Daily)
-        btc_closes = btc_history["close"].unstack(0) if not btc_history.empty else None
-
-        # Eligibility
-        eligible = [s for s in self.etfs if s in etf_closes.columns and self.PassesTrendFilter(s, etf_closes)]
-        if btc_closes is not None and self.btc in btc_closes.columns and self.PassesTrendFilter(self.btc, btc_closes):
-            eligible.append(self.btc)
-
-        num_eligible = len(eligible)
-
-        if num_eligible < 10:
-            self.Debug(f"Low Breadth: {num_eligible} assets. Moving to BIL.")
-            self.Liquidate()
-            self.SetHoldings(self.bil, 1.0)
+        if self.is_warming_up:
             return
 
-        # Momentum Ranking
-        scores = {}
-        for s in eligible:
-            hist_to_use = btc_closes if s == self.btc else etf_closes
-            scores[s] = self.Momentum(s, hist_to_use)
+        n_bars = self._max_lookback + 1
 
-        # Select Top N
-        sorted_assets = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        winners = [x[0] for x in sorted_assets[:self.top_n]]
+        # ------------------------------------------------------------------ #
+        # Step 1 — separate history pulls
+        # ------------------------------------------------------------------ #
+        etf_history = self.history(
+            self._etfs,
+            n_bars,
+            Resolution.DAILY,
+            data_normalization_mode=DataNormalizationMode.TOTAL_RETURN,
+        )
+        btc_history = self.history(
+            [self._btc],
+            n_bars,
+            Resolution.DAILY,
+        )
 
-        self.Liquidate()
+        if etf_history.empty:
+            return
 
-        total_allocated_weight = 0
-        debug_msg = f"DATE: {self.Time.strftime('%Y-%m-%d')} | BREADTH: {num_eligible} | SELECTED: "
+        etf_closes = etf_history["close"].unstack(0)
+        btc_closes = None
+        if not btc_history.empty and "close" in btc_history.columns:
+            btc_closes = btc_history["close"].unstack(0)
 
-        for winner in winners:
-            if winner == self.bil:
-                indiv_weight = 1.0 / self.top_n
-            else:
-                hist_to_use = btc_closes if winner == self.btc else etf_closes
-                asset_cvar = self.GetCVaR(winner, hist_to_use)
+        # ------------------------------------------------------------------ #
+        # Step 2 — eligibility screen (ETFs and BTC evaluated independently)
+        # ------------------------------------------------------------------ #
+        bil_ret_6m = self._absolute_return_6m(self._bil, etf_closes)
 
-                if not asset_cvar or np.isnan(asset_cvar) or asset_cvar == 0:
-                    indiv_weight = 0.0
-                else:
-                    slot_target = self.target_cvar / self.top_n
-                    raw_weight = min(self.max_weight / self.top_n, slot_target / asset_cvar)
-                    indiv_weight = min(raw_weight, 0.15) if winner == self.btc else raw_weight
+        eligible: list = []
 
-            if indiv_weight > 0:
-                self.SetHoldings(winner, indiv_weight)
-                total_allocated_weight += indiv_weight
-                debug_msg += f"{winner.Value}({indiv_weight:.2f}) "
+        for symbol in self._etfs:
+            if symbol not in etf_closes.columns:
+                continue
+            if not self._passes_sma_gate(symbol, etf_closes):
+                continue
+            if symbol == self._bil or self._absolute_return_6m(symbol, etf_closes) > bil_ret_6m:
+                eligible.append((symbol, etf_closes))
 
-        # Fill remainder with BIL
-        cash_weight = 1.0 - total_allocated_weight
-        if cash_weight > 0.01:
-            self.SetHoldings(self.bil, cash_weight)
-            debug_msg += f"| CASH: {cash_weight:.2f}"
+        if (
+            btc_closes is not None
+            and self._btc in btc_closes.columns
+            and self._passes_sma_gate(self._btc, btc_closes)
+            and self._absolute_return_6m(self._btc, btc_closes) > bil_ret_6m
+        ):
+            eligible.append((self._btc, btc_closes))
 
-        self.Debug(debug_msg)
+        if not eligible:
+            self.liquidate()
+            self.set_holdings(self._bil, 1.0)
+            return
+
+        # ------------------------------------------------------------------ #
+        # Step 3 — momentum ranking
+        # ------------------------------------------------------------------ #
+        scores: dict = {s: self._momentum(s, closes) for s, closes in eligible}
+        winner, winner_closes = max(eligible, key=lambda pair: scores[pair[0]])
+
+        for symbol, score in scores.items():
+            self.log(f"{symbol.value} momentum={score:.2%}")
+
+        # ------------------------------------------------------------------ #
+        # Step 4 — volatility-targeted position sizing (uses winner's closes)
+        # ------------------------------------------------------------------ #
+        if winner == self._bil:
+            weight = 1.0
+        else:
+            vol = self._realized_vol(winner, winner_closes)
+            weight = (
+                min(self._max_weight, self._target_vol / vol)
+                if vol and not np.isnan(vol)
+                else 0.0
+            )
+
+        cash_weight = 1.0 - weight
+
+        self.log(
+            f"Selected={winner.value} | "
+            f"weight={weight:.2f} | cash={cash_weight:.2f}"
+        )
+
+        # ------------------------------------------------------------------ #
+        # Step 5 — execute
+        # ------------------------------------------------------------------ #
+        self.liquidate()
+        self.set_holdings(winner, weight)
+        self.set_holdings(self._bil, cash_weight)

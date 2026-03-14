@@ -1,129 +1,280 @@
-import yfinance as yf
-import pandas as pd
+"""signals.py — Absolute/Relative Momentum signal runner.
+
+Run this script directly to print today's signal:
+
+    python signals.py
+
+Requires:
+    pip install yfinance pandas numpy
+"""
+
 import numpy as np
-from datetime import datetime, timedelta
+import pandas as pd
+import yfinance as yf
+from datetime import date, timedelta
 
-# ============================
-# Config aligned with QC Algo
-# ============================
-ETFS = ["VTI", "VGLT", "VGIT", "GLD", "DBC", "SHV", "VEA", "VWO", "BND", "BNDX", "EMB"]
-SECTORS = ["IXP", "RXI", "KXI", "IXC", "IXG", "IXJ", "EXI", "IXN", "MXI", "REET", "JXI"]
-CRYPTO = ["IBIT"] 
-ALL_SYMBOLS = ETFS + SECTORS + CRYPTO
+# --------------------------------------------------------------------------- #
+# Config
+# --------------------------------------------------------------------------- #
+ETF_TICKERS:         list[str] = ["VTI", "VEU", "BND", "BNDX", "VGIT", "GLD", "DBC", "SGOV"]
+BTC_TICKER:          str       = "BTC-USD"
+CASH_TICKER:         str       = "SGOV"
 
-TOP_N = 3  # <--- Updated: Pick top X assets
-MOMENTUM_LOOKBACKS = [21, 63, 126, 189, 252]
-SMA_PERIOD = 168
-BOND_SMA_PERIOD = 126
-CVAR_LOOKBACK = 756
-TARGET_CVAR = 0.03
-MAX_WEIGHT = 1.0
-CASH_PROXY = "SHV"
-BOND_ASSETS = ["VGIT", "BND", "BNDX"]
+MOMENTUM_LOOKBACKS:  list[int] = [21, 63, 126, 189, 252]
+MAX_LOOKBACK:        int       = max(MOMENTUM_LOOKBACKS)
+
+SMA_PERIOD:          int       = 168
+SMA_OVERRIDES:       dict[str, int] = {
+    "BND":  126,
+    "BNDX": 126,
+    "VGIT": 126,
+}
+VOL_LOOKBACK:        int       = 63
+TARGET_VOL:          float     = 0.20
+MAX_WEIGHT:          float     = 1.0
+
+# Extra buffer so rolling windows are fully populated on the first valid row
+_N_BARS: int = MAX_LOOKBACK + SMA_PERIOD + 10
 
 
-def get_data(symbols):
+# --------------------------------------------------------------------------- #
+# Data
+# --------------------------------------------------------------------------- #
+
+def fetch_etf_closes() -> pd.DataFrame:
+    """Download adjusted close prices for all ETFs.
+
+    Returns
+    -------
+    pd.DataFrame
+        Wide-format adjusted closes; columns are ticker strings.
     """
-    """
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=1200) 
-    data = yf.download(symbols, auto_adjust=True, start=start_date, end=end_date)['Close']
-    return data
+    raw = yf.download(
+        ETF_TICKERS,
+        period=f"{_N_BARS}d",
+        auto_adjust=True,
+        progress=False,
+    )
+    closes = raw["Close"] if isinstance(raw.columns, pd.MultiIndex) else raw
+    closes.columns = [c if isinstance(c, str) else c[0] for c in closes.columns]
+    return closes.dropna(how="all")
 
 
-def calculate_momentum(series):
+def fetch_btc_closes() -> pd.DataFrame | None:
+    """Download raw close prices for BTC-USD.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        Single-column wide-format closes, or ``None`` on failure.
     """
-    """
-    returns = []
-    for lb in MOMENTUM_LOOKBACKS:
-        if len(series) > lb:
-            ret = (series.iloc[-1] / series.iloc[-(lb + 1)]) - 1
-            returns.append(ret)
-    return np.mean(returns) if returns else -np.inf
+    try:
+        raw = yf.download(
+            BTC_TICKER,
+            period=f"{_N_BARS}d",
+            auto_adjust=True,
+            progress=False,
+        )
+        if raw.empty:
+            return None
+        if isinstance(raw.columns, pd.MultiIndex):
+            raw.columns = [col[0] for col in raw.columns]
+        if "Close" not in raw.columns:
+            return None
+        closes = raw[["Close"]].rename(columns={"Close": BTC_TICKER})
+        return closes.dropna(how="all")
+    except Exception:
+        return None
 
 
-def get_cvar(series, alpha=0.95):
+# --------------------------------------------------------------------------- #
+# Signal helpers
+# --------------------------------------------------------------------------- #
+
+def momentum(ticker: str, closes: pd.DataFrame) -> float:
+    """Compute composite momentum as the mean return over multiple lookbacks."""
+    if ticker not in closes.columns:
+        return -np.inf
+
+    px = closes[ticker].dropna()
+    if len(px) < MAX_LOOKBACK + 1:
+        return -np.inf
+
+    return float(np.mean([
+        px.iloc[-1] / px.iloc[-(lb + 1)] - 1
+        for lb in MOMENTUM_LOOKBACKS
+    ]))
+
+
+def passes_sma_gate(ticker: str, closes: pd.DataFrame) -> bool:
+    """Check whether the asset's last close is above its long-run SMA.
+
+    BIL is unconditionally exempt from this filter. BND, BNDX, and VGIT
+    use a 126-day SMA; all other assets use the default ``SMA_PERIOD``.
     """
-    """
-    if len(series) < 252:
+    if ticker == CASH_TICKER:
+        return True
+
+    if ticker not in closes.columns:
+        return False
+
+    px = closes[ticker].dropna()
+    sma_period = SMA_OVERRIDES.get(ticker, SMA_PERIOD)
+
+    if len(px) < sma_period:
+        return False
+
+    sma = float(px.rolling(sma_period).mean().iloc[-1])
+    if np.isnan(sma):
+        return False
+
+    return bool(px.iloc[-1] > sma)
+
+
+def realized_vol(ticker: str, closes: pd.DataFrame) -> float:
+    """Estimate annualised realised volatility from log returns."""
+    if ticker not in closes.columns:
         return np.nan
-    rets = series.pct_change().dropna().tail(CVAR_LOOKBACK)
-    var_threshold = np.percentile(rets, (1 - alpha) * 100)
-    tail_losses = rets[rets <= var_threshold]
-    return abs(tail_losses.mean()) if not tail_losses.empty else np.nan
+
+    px = closes[ticker].dropna()
+    if len(px) < VOL_LOOKBACK + 1:
+        return np.nan
+
+    log_rets = np.log(px / px.shift(1)).dropna()
+    if len(log_rets) < VOL_LOOKBACK:
+        return np.nan
+
+    vol = log_rets.tail(VOL_LOOKBACK).std()
+    if vol is None or np.isnan(vol):
+        return np.nan
+
+    return float(vol * np.sqrt(252))
 
 
-def run_strategy():
-    """
-    """
-    print(f"Fetching data for {len(ALL_SYMBOLS)} assets...")
-    data = get_data(ALL_SYMBOLS)
+def absolute_return_6m(ticker: str, closes: pd.DataFrame) -> float:
+    """Compute the trailing six-month (126-day) total return."""
+    if ticker not in closes.columns:
+        return -np.inf
 
-    # 1. Eligibility (Trend Filter)
-    eligible = []
-    print("\n--- Trend Filter Screening ---")
-    for symbol in ALL_SYMBOLS:
-        if symbol not in data.columns: continue
-        px = data[symbol].dropna()
-        period = BOND_SMA_PERIOD if symbol in BOND_ASSETS else SMA_PERIOD
-        
-        if len(px) < period: continue
+    px = closes[ticker].dropna()
+    if len(px) < 127:
+        return -np.inf
 
-        sma = px.rolling(period).mean().iloc[-1]
-        if px.iloc[-1] > sma or symbol == CASH_PROXY:
-            eligible.append(symbol)
-            print(f"[PASSED] {symbol}")
-        else:
-            print(f"[FAILED] {symbol}")
+    return float(px.iloc[-1] / px.iloc[-127] - 1)
 
-    # 2. Breadth Filter (Threshold updated to 10)
-    num_eligible = len(eligible)
-    if num_eligible < 10:
-        print(f"\nLOW BREADTH: Only {num_eligible} assets passed. Moving to {CASH_PROXY}.")
-        final_allocations = {CASH_PROXY: 1.0}
+
+# --------------------------------------------------------------------------- #
+# Signal
+# --------------------------------------------------------------------------- #
+
+def compute_signal() -> dict:
+    """Fetch latest data and compute the current momentum signal."""
+    etf_closes = fetch_etf_closes()
+    btc_closes = fetch_btc_closes()
+
+    bil_ret_6m = absolute_return_6m(CASH_TICKER, etf_closes)
+
+    # Build full asset list with their respective closes DataFrames
+    all_assets: list[tuple[str, pd.DataFrame]] = [
+        (t, etf_closes) for t in ETF_TICKERS
+    ]
+    if btc_closes is not None:
+        all_assets.append((BTC_TICKER, btc_closes))
+
+    # Compute diagnostics for every asset (eligible or not)
+    diagnostics: dict[str, dict] = {}
+    for ticker, closes in all_assets:
+        sma_period = SMA_OVERRIDES.get(ticker, SMA_PERIOD)
+        trend_pass = passes_sma_gate(ticker, closes)
+        mom        = momentum(ticker, closes)
+        ret_6m     = absolute_return_6m(ticker, closes)
+        abs_pass   = (ticker == CASH_TICKER) or (ret_6m > bil_ret_6m)
+        eligible   = trend_pass and abs_pass
+        diagnostics[ticker] = {
+            "sma_period": sma_period,
+            "trend_pass": trend_pass,
+            "momentum":   mom,
+            "ret_6m":     ret_6m,
+            "abs_pass":   abs_pass,
+            "eligible":   eligible,
+        }
+
+    eligible_list: list[tuple[str, pd.DataFrame]] = [
+        (t, c) for t, c in all_assets if diagnostics[t]["eligible"]
+    ]
+
+    if not eligible_list:
+        return {
+            "winner":       CASH_TICKER,
+            "weight":       1.0,
+            "cash_weight":  0.0,
+            "scores":       {CASH_TICKER: 0.0},
+            "diagnostics":  diagnostics,
+            "as_of":        str(etf_closes.index[-1].date()),
+        }
+
+    scores: dict[str, float] = {t: momentum(t, c) for t, c in eligible_list}
+    winner, winner_closes = max(eligible_list, key=lambda pair: scores[pair[0]])
+
+    if winner == CASH_TICKER:
+        weight = 1.0
     else:
-        # 3. Momentum Ranking for Top N
-        scores = {s: calculate_momentum(data[s].dropna()) for s in eligible}
-        sorted_assets = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        winners = [x[0] for x in sorted_assets[:TOP_N]]
+        vol = realized_vol(winner, winner_closes)
+        weight = (
+            min(MAX_WEIGHT, TARGET_VOL / vol)
+            if vol and not np.isnan(vol)
+            else 0.0
+        )
 
-        print(f"\nTop {TOP_N} Selected: {winners} (Breadth: {num_eligible})")
+    cash_weight = 1.0 - weight
 
-        # 4. CVaR Targeting & Final Weighting
-        final_allocations = {}
-        total_allocated_weight = 0
+    return {
+        "winner":       winner,
+        "weight":       weight,
+        "cash_weight":  cash_weight,
+        "scores":       scores,
+        "diagnostics":  diagnostics,
+        "as_of":        str(etf_closes.index[-1].date()),
+    }
 
-        for winner in winners:
-            if winner == CASH_PROXY:
-                indiv_weight = 1.0 / TOP_N
-            else:
-                asset_cvar = get_cvar(data[winner].dropna())
-                
-                if np.isnan(asset_cvar) or asset_cvar == 0:
-                    indiv_weight = 0.0
-                else:
-                    # Risk budget per slot (Target CVaR / N)
-                    slot_target = TARGET_CVAR / TOP_N
-                    raw_weight = min(MAX_WEIGHT / TOP_N, slot_target / asset_cvar)
-                    
-                    # Crypto Cap (15%)
-                    if winner in CRYPTO:
-                        indiv_weight = min(raw_weight, 0.15)
-                    else:
-                        indiv_weight = raw_weight
-            
-            final_allocations[winner] = indiv_weight
-            total_allocated_weight += indiv_weight
 
-        # 5. Fill remainder with Cash Proxy
-        cash_fill = 1.0 - total_allocated_weight
-        if cash_fill > 0.001:
-            final_allocations[CASH_PROXY] = final_allocations.get(CASH_PROXY, 0) + cash_fill
-
-    print("\n--- Final Target Allocation ---")
-    for asset, weight in sorted(final_allocations.items(), key=lambda x: x[1], reverse=True):
-        if weight > 0.001:
-            print(f"{asset:6}: {weight:.2%}")
+# --------------------------------------------------------------------------- #
+# Entry point
+# --------------------------------------------------------------------------- #
 
 if __name__ == "__main__":
-    run_strategy()
+    signal = compute_signal()
+    diag   = signal["diagnostics"]
+
+    print(f"\n{'─' * 66}")
+    print(f"  Signal as of : {signal['as_of']}")
+    print(f"{'─' * 66}")
+    print(f"  Winner       : {signal['winner']}")
+    print(f"  Weight       : {signal['weight']:.1%}")
+    print(f"  Cash (BIL)   : {signal['cash_weight']:.1%}")
+
+    # ------------------------------------------------------------------ #
+    # All-asset diagnostics table
+    # ------------------------------------------------------------------ #
+    print(f"{'─' * 66}")
+    print(f"  {'Ticker':<10} {'SMA':>5}  {'Trend':>5}  {'AbsMom':>6}  {'Momentum':>9}  {'Status'}")
+    print(f"  {'──────':<10} {'───':>5}  {'─────':>5}  {'──────':>6}  {'────────':>9}  {'──────'}")
+    for ticker, d in diag.items():
+        trend_str = "✓" if d["trend_pass"] else "✗"
+        abs_str   = "✓" if d["abs_pass"]   else "✗"
+        mom_str   = f"{d['momentum']:>+.2%}" if d["momentum"] not in (-np.inf, np.inf) else "    n/a"
+        ret_str   = f"{d['ret_6m']:>+.2%}"   if d["ret_6m"]   not in (-np.inf, np.inf) else "   n/a"
+        status    = "ELIGIBLE" if d["eligible"] else "filtered"
+        sma_lbl   = f"{d['sma_period']}d"
+        print(f"  {ticker:<10} {sma_lbl:>5}  {trend_str:>5}  {abs_str:>6}  {mom_str:>9}  {status}")
+
+    # ------------------------------------------------------------------ #
+    # Eligible asset momentum ranking
+    # ------------------------------------------------------------------ #
+    print(f"{'─' * 66}")
+    print("  Momentum ranking (eligible assets):")
+    for ticker, score in sorted(signal["scores"].items(), key=lambda x: -x[1]):
+        marker = " ← WINNER" if ticker == signal["winner"] else ""
+        print(f"    {ticker:<10} {score:>+.2%}{marker}")
+
+    print(f"{'─' * 66}\n")
