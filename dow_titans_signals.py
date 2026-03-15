@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore")
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
 EMA_PERIOD           = 200
-USE_SCREENER_FILTERS = False   # Set True to also apply SHV / VGIT / ACWI gates
+USE_SCREENER_FILTERS = True   # Set True to also apply SHV / VGIT / ACWI gates
 CASH_ETF             = "SHV"
 TREASURY_ETF         = "VGIT"
 ACWI_ETF             = "ACWI"
@@ -134,6 +134,11 @@ def run_signals(stock_prices: pd.DataFrame, bench_prices: pd.DataFrame) -> pd.Da
             acwi_3m = bench_cache.get("acwi_3m")
             acwi_6m = bench_cache.get("acwi_6m")
             acwi_1y = bench_cache.get("acwi_1y")
+
+            if acwi_3m is not None and acwi_3m < 0: acwi_3m = 0
+            if acwi_6m is not None and acwi_6m < 0: acwi_6m = 0
+            if acwi_1y is not None and acwi_1y < 0: acwi_1y = 0
+
             f1 = r6m is not None and shv_6m  is not None and r6m > shv_6m
             f2 = r6m is not None and vgit_6m is not None and r6m > vgit_6m
             f3 = (r3m is not None and acwi_3m is not None and r3m > acwi_3m and

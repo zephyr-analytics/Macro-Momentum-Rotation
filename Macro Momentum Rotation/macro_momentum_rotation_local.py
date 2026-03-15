@@ -32,6 +32,7 @@ SMA_OVERRIDES:       dict[str, int] = {
 VOL_LOOKBACK:        int       = 63
 TARGET_VOL:          float     = 0.20
 MAX_WEIGHT:          float     = 1.0
+TOP_N:               int       = 2
 
 # Extra buffer so rolling windows are fully populated on the first valid row
 _N_BARS: int = MAX_LOOKBACK + SMA_PERIOD + 10
@@ -205,8 +206,7 @@ def compute_signal() -> dict:
 
     if not eligible_list:
         return {
-            "winner":       CASH_TICKER,
-            "weight":       1.0,
+            "winners":      [(CASH_TICKER, 1.0)],
             "cash_weight":  0.0,
             "scores":       {CASH_TICKER: 0.0},
             "diagnostics":  diagnostics,
@@ -214,23 +214,31 @@ def compute_signal() -> dict:
         }
 
     scores: dict[str, float] = {t: momentum(t, c) for t, c in eligible_list}
-    winner, winner_closes = max(eligible_list, key=lambda pair: scores[pair[0]])
+    sorted_eligible = sorted(eligible_list, key=lambda pair: scores[pair[0]], reverse=True)
+    top_n = sorted_eligible[:TOP_N]
 
-    if winner == CASH_TICKER:
-        weight = 1.0
-    else:
-        vol = realized_vol(winner, winner_closes)
-        weight = (
-            min(MAX_WEIGHT, TARGET_VOL / vol)
-            if vol and not np.isnan(vol)
-            else 0.0
-        )
+    per_slot_cap = MAX_WEIGHT / len(top_n)
 
-    cash_weight = 1.0 - weight
+    winners: list[tuple[str, float]] = []
+    total_allocated = 0.0
+
+    for winner, winner_closes in top_n:
+        if winner == CASH_TICKER:
+            weight = per_slot_cap
+        else:
+            vol = realized_vol(winner, winner_closes)
+            weight = (
+                min(per_slot_cap, TARGET_VOL / vol)
+                if vol and not np.isnan(vol)
+                else 0.0
+            )
+        winners.append((winner, weight))
+        total_allocated += weight
+
+    cash_weight = max(0.0, 1.0 - total_allocated)
 
     return {
-        "winner":       winner,
-        "weight":       weight,
+        "winners":      winners,
         "cash_weight":  cash_weight,
         "scores":       scores,
         "diagnostics":  diagnostics,
@@ -249,9 +257,9 @@ if __name__ == "__main__":
     print(f"\n{'─' * 66}")
     print(f"  Signal as of : {signal['as_of']}")
     print(f"{'─' * 66}")
-    print(f"  Winner       : {signal['winner']}")
-    print(f"  Weight       : {signal['weight']:.1%}")
-    print(f"  Cash (BIL)   : {signal['cash_weight']:.1%}")
+    for i, (ticker, weight) in enumerate(signal["winners"], 1):
+        print(f"  Winner #{i:<6} : {ticker}  ({weight:.1%})")
+    print(f"  Cash (SGOV)  : {signal['cash_weight']:.1%}")
 
     # ------------------------------------------------------------------ #
     # All-asset diagnostics table
@@ -271,10 +279,11 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------ #
     # Eligible asset momentum ranking
     # ------------------------------------------------------------------ #
+    winner_tickers = {t for t, _ in signal["winners"]}
     print(f"{'─' * 66}")
     print("  Momentum ranking (eligible assets):")
     for ticker, score in sorted(signal["scores"].items(), key=lambda x: -x[1]):
-        marker = " ← WINNER" if ticker == signal["winner"] else ""
+        marker = " ← WINNER" if ticker in winner_tickers else ""
         print(f"    {ticker:<10} {score:>+.2%}{marker}")
 
     print(f"{'─' * 66}\n")

@@ -7,7 +7,7 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
 
     Ranks a universe of ETFs and crypto by composite momentum, applies an
     absolute-return filter against cash (BIL), gates entries with a
-    simple-moving-average trend filter, and sizes the winning asset via
+    simple-moving-average trend filter, and sizes the top-2 winning assets via
     realized-volatility targeting. Any unallocated weight is held in BIL.
     """
 
@@ -19,7 +19,8 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
         # ------------------------------------------------------------------ #
         # Universe
         # ------------------------------------------------------------------ #
-        self._vt   = self.add_equity("VT",   Resolution.DAILY).symbol
+        self._vti   = self.add_equity("VTI",   Resolution.DAILY).symbol
+        self._vxus   = self.add_equity("VEU",   Resolution.DAILY).symbol
         self._vgit = self.add_equity("VGIT", Resolution.DAILY).symbol
         self._bndx = self.add_equity("BNDX", Resolution.DAILY).symbol
         self._gld  = self.add_equity("GLD",  Resolution.DAILY).symbol
@@ -29,7 +30,7 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
         self._btc  = self.add_crypto("BTCUSD", Resolution.DAILY).symbol
 
         self._etfs: list = [
-            self._vt, self._bnd, self._bndx, self._vgit,
+            self._vti, self._bnd, self._bndx, self._vgit, self._vxus,
             self._gld, self._dbc, self._bil
         ]
 
@@ -51,15 +52,16 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
             self._vgit: 126,
         }
         self._vol_lookback: int   = 63
-        self._target_vol:   float = 0.16
+        self._target_vol:   float = 0.20
         self._max_weight:   float = 1.0
+        self._top_n:        int   = 2
 
         # ------------------------------------------------------------------ #
         # Schedule
         # ------------------------------------------------------------------ #
         self.schedule.on(
-            self.date_rules.month_start(self._vt),
-            self.time_rules.after_market_open(self._vt, 120),
+            self.date_rules.month_start(self._vti),
+            self.time_rules.after_market_open(self._vti, 120),
             self._rebalance,
         )
 
@@ -211,9 +213,9 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
         2. Screen each universe independently via SMA gate and absolute-return
            vs. cash filter.
         3. Merge the two eligible lists, rank by composite momentum, and select
-           the top asset.
-        4. Size the winner using volatility targeting, using its own closes;
-           park remainder in BIL.
+           the top ``_top_n`` assets.
+        4. Size each winner using volatility targeting (cap per slot =
+           ``_max_weight / _top_n``); park remainder in BIL.
         """
         if self.is_warming_up:
             return
@@ -272,37 +274,42 @@ class AbsoluteRelativeMomentum(QCAlgorithm):
             return
 
         # ------------------------------------------------------------------ #
-        # Step 3 — momentum ranking
+        # Step 3 — momentum ranking; select top N
         # ------------------------------------------------------------------ #
         scores: dict = {s: self._momentum(s, closes) for s, closes in eligible}
-        winner, winner_closes = max(eligible, key=lambda pair: scores[pair[0]])
 
         for symbol, score in scores.items():
             self.log(f"{symbol.value} momentum={score:.2%}")
 
-        # ------------------------------------------------------------------ #
-        # Step 4 — volatility-targeted position sizing (uses winner's closes)
-        # ------------------------------------------------------------------ #
-        if winner == self._bil:
-            weight = 1.0
-        else:
-            vol = self._realized_vol(winner, winner_closes)
-            weight = (
-                min(self._max_weight, self._target_vol / vol)
-                if vol and not np.isnan(vol)
-                else 0.0
-            )
-
-        cash_weight = 1.0 - weight
-
-        self.log(
-            f"Selected={winner.value} | "
-            f"weight={weight:.2f} | cash={cash_weight:.2f}"
-        )
+        sorted_eligible = sorted(eligible, key=lambda pair: scores[pair[0]], reverse=True)
+        top_n = sorted_eligible[:self._top_n]
 
         # ------------------------------------------------------------------ #
-        # Step 5 — execute
+        # Step 4 & 5 — volatility-targeted sizing and execution
         # ------------------------------------------------------------------ #
+        # Per-slot weight cap scales with number of winners so combined
+        # exposure stays within _max_weight.
+        per_slot_cap = self._max_weight / len(top_n)
+
         self.liquidate()
-        self.set_holdings(winner, weight)
+
+        total_allocated = 0.0
+
+        for winner, winner_closes in top_n:
+            if winner == self._bil:
+                weight = per_slot_cap
+            else:
+                vol = self._realized_vol(winner, winner_closes)
+                weight = (
+                    min(per_slot_cap, self._target_vol / vol)
+                    if vol and not np.isnan(vol)
+                    else 0.0
+                )
+
+            total_allocated += weight
+            self.log(f"Selected={winner.value} | weight={weight:.2f}")
+            self.set_holdings(winner, weight)
+
+        cash_weight = max(0.0, 1.0 - total_allocated)
+        self.log(f"Cash (BIL) weight={cash_weight:.2f}")
         self.set_holdings(self._bil, cash_weight)
