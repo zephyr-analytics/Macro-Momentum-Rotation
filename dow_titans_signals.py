@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore")
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
 EMA_PERIOD           = 200
-USE_SCREENER_FILTERS = True   # Set True to also apply SHV / VGIT / ACWI gates
+USE_SCREENER_FILTERS = True
 CASH_ETF             = "SHV"
 TREASURY_ETF         = "VGIT"
 ACWI_ETF             = "ACWI"
