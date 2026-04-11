@@ -1,0 +1,59 @@
+Symbol,Company Name,Security Type,Security Price,Market Capitalization,Sector,Industry,Sub-Industry,Exchange
+AMX,America Movil SAB de CV,Depository Receipt,26.29,$77.32B,Communication Services,Wireless Telecommunication Services,Wireless Telecommunication Services,NYSE
+BCE,BCE Inc.,Common Stock,24.12,$22.22B,Communication Services,Diversified Telecommunication Services,Integrated Telecommunication Services,NYSE
+CMCSA,Comcast Corp,Common Stock,27.96,$99.98B,Communication Services,Diversified Telecommunication Services,Integrated Telecommunication Services,NASDAQ
+LUMN,Lumen Technologies Inc,Common Stock,7.09,$7.02B,Communication Services,Diversified Telecommunication Services,Alternative Carriers,NYSE
+DIS,Walt Disney Co (The),Common Stock,99.18,$169.68B,Communication Services,Entertainment,Movies & Entertainment,NYSE
+EA,Electronic Arts Inc,Common Stock,203.99,$51.04B,Communication Services,Entertainment,Interactive Home Entertainment,NASDAQ
+GOOGL,Alphabet Inc,Common Stock,317.32,$2.03T,Communication Services,Interactive Media & Services,Interactive Media & Services,NASDAQ
+KT,KT Corporation,Depository Receipt,22.11,$10.36B,Communication Services,Diversified Telecommunication Services,Integrated Telecommunication Services,NYSE
+TIGO,Millicom International Cellular SA,Common Stock,80.48,$13.61B,Communication Services,Wireless Telecommunication Services,Wireless Telecommunication Services,NASDAQ
+NFLX,Netflix Inc,Common Stock,99.39,$417.23B,Communication Services,Entertainment,Movies & Entertainment,NASDAQ
+NTES,NetEase Inc,Depository Receipt,114.04,$71.23B,Communication Services,Entertainment,Interactive Home Entertainment,NASDAQ
+NXST,Nexstar Media Group Inc.,Common Stock,183.58,$5.73B,Communication Services,Media,Broadcasting,NASDAQ
+NYT,The New York Times Company,Common Stock,84.71,$13.90B,Communication Services,Media,Publishing,NYSE
+OMC,Omnicom Group Inc,Common Stock,76.87,$21.56B,Communication Services,Media,Advertising,NYSE
+RCI,Rogers Communications Inc,Common Stock,33.25,$14.28B,Communication Services,Wireless Telecommunication Services,Wireless Telecommunication Services,NYSE
+T,AT&T Inc,Common Stock,27.35,$195.78B,Communication Services,Diversified Telecommunication Services,Integrated Telecommunication Services,NYSE
+SIRI,Sirius XM Holdings Inc,Common Stock,23.47,$7.94B,Communication Services,Media,Cable & Satellite,NASDAQ
+SKM,SK Telecom Co Ltd,Depository Receipt,34.4,$12.32B,Communication Services,Wireless Telecommunication Services,Wireless Telecommunication Services,NYSE
+TDS,Telephone and Data Systems Inc,Common Stock,45.73,$5.08B,Communication Services,Wireless Telecommunication Services,Wireless Telecommunication Services,NYSE
+TKC,Turkcell Iletisim Hizmet AS,Depository Receipt,6.22,$5.24B,Communication Services,Wireless Telecommunication Services,Wireless Telecommunication Services,NYSE
+TLK,Perusahaan Perseroan (Persero) PT Telekomunikasi I,Depository Receipt,18.93,$18.02B,Communication Services,Diversified Telecommunication Services,Integrated Telecommunication Services,NYSE
+TIMB,TIM S.A.,Depository Receipt,27,$12.44B,Communication Services,Wireless Telecommunication Services,Wireless Telecommunication Services,NYSE
+TTWO,Take-Two Interactive Software Inc,Common Stock,202.13,$36.73B,Communication Services,Entertainment,Interactive Home Entertainment,NASDAQ
+TU,TELUS Corp,Common Stock,12.63,$19.56B,Communication Services,Diversified Telecommunication Services,Integrated Telecommunication Services,NYSE
+VOD,Vodafone Group Public Limited Company,Depository Receipt,15.77,$35.34B,Communication Services,Wireless Telecommunication Services,Wireless Telecommunication Services,NASDAQ
+VZ,Verizon Communications Inc,Common Stock,48.04,$203.23B,Communication Services,Diversified Telecommunication Services,Integrated Telecommunication Services,NYSE
+TKO,TKO Group Holdings Inc,Common Stock,197.05,$37.46B,Communication Services,Entertainment,Movies & Entertainment,NYSE
+WBD,WARNER BROS DISCOVERY INC,Common Stock,27.55,$68.61B,Communication Services,Entertainment,Movies & Entertainment,NASDAQ
+BIDU,Baidu Inc,Depository Receipt,113.51,$38.02B,Communication Services,Interactive Media & Services,Interactive Media & Services,NASDAQ
+PSKY,Paramount Skydance Corp,Common Stock,10.82,$12.12B,Communication Services,Media,Broadcasting,NASDAQ
+LYV,Live Nation Entertainment Inc,Common Stock,163.56,$36.78B,Communication Services,Entertainment,Movies & Entertainment,NYSE
+GSAT,Globalstar Inc,Common Stock,74.91,$9.50B,Communication Services,Diversified Telecommunication Services,Alternative Carriers,NASDAQ
+TMUS,T-Mobile US Inc,Common Stock,197.63,$220.97B,Communication Services,Wireless Telecommunication Services,Wireless Telecommunication Services,NASDAQ
+CHT,Chunghwa Telecom Co Ltd,Depository Receipt,42.63,$32.78B,Communication Services,Diversified Telecommunication Services,Integrated Telecommunication Services,NYSE
+SATS,EchoStar Corp,Common Stock,122.82,$36.04B,Communication Services,Media,Cable & Satellite,NASDAQ
+CHTR,Charter Communications Inc,Common Stock,221.63,$31.60B,Communication Services,Media,Cable & Satellite,NASDAQ
+META,Meta Platforms Inc,Common Stock,612.42,$1.45T,Communication Services,Interactive Media & Services,Interactive Media & Services,NASDAQ
+NWSA,News Corp,Common Stock,24.89,$9.04B,Communication Services,Media,Publishing,NASDAQ
+NWS,News Corp,Common Stock,28.7,$5.20B,Communication Services,Media,Publishing,NASDAQ
+GOOG,Alphabet Inc,Common Stock,314.74,$1.65T,Communication Services,Interactive Media & Services,Interactive Media & Services,NASDAQ
+LBRDK,Liberty Broadband Corp,Common Stock,51.63,$6.51B,Communication Services,Media,Cable & Satellite,NASDAQ
+MSGS,Madison Square Garden Sports Corp,Common Stock,328.02,$7.72B,Communication Services,Entertainment,Movies & Entertainment,NYSE
+MTCH,Match Group Inc,Common Stock,32.7,$7.43B,Communication Services,Interactive Media & Services,Interactive Media & Services,NASDAQ
+FWONK,Formula One Group - The Liberty Media Group,Common Stock,88.16,$19.38B,Communication Services,Entertainment,Movies & Entertainment,NASDAQ
+TTD,Trade Desk Inc (The),Common Stock,20.25,$9.85B,Communication Services,Media,Advertising,NASDAQ
+ROKU,Roku Inc,Common Stock,100.99,$14.53B,Communication Services,Entertainment,Movies & Entertainment,NASDAQ
+BILI,Bilibili Inc,Depository Receipt,24.29,$7.72B,Communication Services,Interactive Media & Services,Interactive Media & Services,NASDAQ
+SPOT,Spotify Technology SA,Common Stock,483.17,$99.48B,Communication Services,Entertainment,Movies & Entertainment,NYSE
+TME,Tencent Music Entertainment Group,Depository Receipt,9.39,$13.92B,Communication Services,Entertainment,Movies & Entertainment,NYSE
+FOX,Fox Corp,Common Stock,54.48,$12.08B,Communication Services,Media,Broadcasting,NASDAQ
+FOXA,Fox Corp,Common Stock,60.22,$11.97B,Communication Services,Media,Broadcasting,NASDAQ
+PINS,Pinterest Inc,Common Stock,18.1,$11.66B,Communication Services,Interactive Media & Services,Interactive Media & Services,NYSE
+ASTS,AST SpaceMobile Inc,Common Stock,96.46,$35.36B,Communication Services,Diversified Telecommunication Services,Alternative Carriers,NASDAQ
+WMG,Warner Music Group Corp,Common Stock,27.53,$14.14B,Communication Services,Entertainment,Movies & Entertainment,NASDAQ
+VIV,Telefonica Brasil SA,Depository Receipt,16.57,$25.39B,Communication Services,Diversified Telecommunication Services,Integrated Telecommunication Services,NYSE
+RBLX,Roblox Corp,Common Stock,55.43,$40.75B,Communication Services,Entertainment,Interactive Home Entertainment,NYSE
+RDDT,Reddit Inc,Common Stock,145,$26.96B,Communication Services,Interactive Media & Services,Interactive Media & Services,NYSE
+VSNT,Versant Media Group Inc,Common Stock,38.53,$5.48B,Communication Services,Media,Cable & Satellite,NASDAQ

@@ -1,0 +1,214 @@
+Symbol,Company Name,Security Type,Security Price,Market Capitalization,Sector,Industry,Sub-Industry,Exchange
+ABCB,Ameris Bancorp,Common Stock,82.2,$5.40B,Financials,Banks,Regional Banks,NYSE
+CB,Chubb Ltd,Common Stock,332.64,$127.19B,Financials,Insurance,Property & Casualty Insurance,NYSE
+ACGL,Arch Capital Group Ltd,Common Stock,98.6,$34.53B,Financials,Insurance,Property & Casualty Insurance,NASDAQ
+AEG,Aegon Ltd,Depository Receipt,7.78,$11.25B,Financials,Insurance,Life & Health Insurance,NYSE
+THG,Hanover Insurance Group Inc (The),Common Stock,178.63,$6.18B,Financials,Insurance,Property & Casualty Insurance,NYSE
+AFG,American Financial Group Inc,Common Stock,131.88,$10.85B,Financials,Insurance,Property & Casualty Insurance,NYSE
+AFL,Aflac Incorporated,Common Stock,113,$56.94B,Financials,Insurance,Life & Health Insurance,NYSE
+AIG,American International Group Inc,Common Stock,77.43,$40.74B,Financials,Insurance,Property & Casualty Insurance,NYSE
+AIZ,Assurant Inc.,Common Stock,223.69,$10.89B,Financials,Insurance,Property & Casualty Insurance,NYSE
+AJG,Arthur J. Gallagher & Co.,Common Stock,220.8,$55.89B,Financials,Insurance,Insurance Brokers,NYSE
+ALL,The Allstate Corporation,Common Stock,212.07,$54.64B,Financials,Insurance,Property & Casualty Insurance,NYSE
+AMG,Affiliated Managers Group Inc.,Common Stock,286.48,$7.21B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+AON,Aon plc,Common Stock,329.76,$69.09B,Financials,Insurance,Insurance Brokers,NYSE
+ARCC,ARES CAPITAL CORPORATION,Common Stock,18.17,$12.96B,Financials,Capital Markets,Asset Management & Custody Banks,NASDAQ
+IVZ,Invesco Ltd,Common Stock,24.21,$10.09B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+AXP,American Express Co,Common Stock,316.34,$210.56B,Financials,Consumer Finance,Consumer Finance,NYSE
+AXS,AXIS Capital Holdings Ltd,Common Stock,102.89,$7.49B,Financials,Insurance,Property & Casualty Insurance,NYSE
+BAC,Bank of America Corp,Common Stock,51.88,$359.29B,Financials,Banks,Diversified Banks,NYSE
+BAP,Credicorp Ltd,Common Stock,352.25,$26.78B,Financials,Banks,Diversified Banks,NYSE
+TFC,Truist Financial Corp,Common Stock,49.29,$59.36B,Financials,Banks,Regional Banks,NYSE
+BCH,Banco De Chile,Depository Receipt,37.89,$18.32B,Financials,Banks,Diversified Banks,NYSE
+CM,Canadian Imperial Bank of Commerce,Common Stock,100.97,$90.83B,Financials,Banks,Diversified Banks,NYSE
+BCS,Barclays PLC,Depository Receipt,23.51,$75.18B,Financials,Banks,Diversified Banks,NYSE
+BEN,Franklin Resources Inc,Common Stock,24.88,$12.38B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+WRB,Berkley (W.R.) Corp,Common Stock,67.22,$24.97B,Financials,Insurance,Property & Casualty Insurance,NYSE
+BK,Bank of New York Mellon Corp (The),Common Stock,127.94,$85.77B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+BLK,BlackRock Inc,Common Stock,1001.54,$149.08B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+FRHC,Freedom Holding Corp,Common Stock,157.27,$9.39B,Financials,Capital Markets,Investment Banking & Brokerage,NASDAQ
+BMO,Bank of Montreal,Common Stock,141,$97.58B,Financials,Banks,Diversified Banks,NYSE
+BN,Brookfield Corp,Common Stock,42.05,$99.95B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+BNS,The Bank of Nova Scotia,Common Stock,71.34,$86.08B,Financials,Banks,Diversified Banks,NYSE
+BOKF,BOK Financial Corp,Common Stock,134.21,$7.96B,Financials,Banks,Regional Banks,NASDAQ
+BPOP,Popular Inc,Common Stock,145.37,$9.21B,Financials,Banks,Regional Banks,NASDAQ
+BRK-B,Berkshire Hathaway Inc,Common Stock,479.75,$664.88B,Financials,Financial Services,Multi-Sector Holdings,NYSE
+BRO,Brown & Brown Inc,Common Stock,67.76,$22.54B,Financials,Insurance,Insurance Brokers,NYSE
+C,Citigroup Inc,Common Stock,123.49,$200.87B,Financials,Banks,Diversified Banks,NYSE
+CBSH,Commerce Bancshares Inc,Common Stock,50.8,$7.34B,Financials,Banks,Regional Banks,NASDAQ
+FIS,Fidelity National Information Services Inc,Common Stock,47.01,$23.77B,Financials,Financial Services,Transaction & Payment Processing Services,NYSE
+CFR,Cullen/Frost Bankers Inc,Common Stock,143.02,$8.83B,Financials,Banks,Regional Banks,NYSE
+CIB,Grupo Cibest S.A,Depository Receipt,75.36,$8.26B,Financials,Banks,Diversified Banks,NYSE
+CINF,Cincinnati Financial Corp,Common Stock,163.25,$24.94B,Financials,Insurance,Property & Casualty Insurance,NASDAQ
+CME,CME Group Inc,Common Stock,302.81,$112.68B,Financials,Capital Markets,Financial Exchanges & Data,NASDAQ
+CNA,CNA Financial Corp,Common Stock,47.41,$12.55B,Financials,Insurance,Property & Casualty Insurance,NYSE
+COF,Capital One Financial Corp,Common Stock,192.46,$112.66B,Financials,Consumer Finance,Consumer Finance,NYSE
+COLB,Columbia Banking System Inc,Common Stock,28.88,$8.03B,Financials,Banks,Regional Banks,NASDAQ
+DB,Deutsche Bank AG,Common Stock,32.16,$57.58B,Financials,Capital Markets,Diversified Capital Markets,NYSE
+ERIE,Erie Indemnity Co,Common Stock,253.38,$13.00B,Financials,Insurance,Property & Casualty Insurance,NASDAQ
+BGC,BGC Group Inc,Common Stock,10.87,$5.03B,Financials,Capital Markets,Investment Banking & Brokerage,NASDAQ
+EWBC,East West Bancorp Inc,Common Stock,114.6,$15.22B,Financials,Banks,Regional Banks,NASDAQ
+FCFS,FirstCash Holdings Inc,Common Stock,198.84,$8.57B,Financials,Consumer Finance,Consumer Finance,NASDAQ
+FCNCA,First Citizens BancShares Inc,Common Stock,1956.63,$20.80B,Financials,Banks,Diversified Banks,NASDAQ
+FDS,FactSet Research Systems Inc.,Common Stock,222.97,$8.29B,Financials,Capital Markets,Financial Exchanges & Data,NYSE
+FHN,First Horizon Corp,Common Stock,24.1,$11.07B,Financials,Banks,Regional Banks,NYSE
+FISV,Fiserv Inc.,Common Stock,56.63,$29.49B,Financials,Financial Services,Transaction & Payment Processing Services,NASDAQ
+FITB,Fifth Third Bancorp,Common Stock,49.34,$43.28B,Financials,Banks,Diversified Banks,NASDAQ
+FNB,F.N.B. Corp,Common Stock,17.64,$6.06B,Financials,Banks,Regional Banks,NYSE
+GBCI,Glacier Bancorp Inc,Common Stock,47.36,$6.00B,Financials,Banks,Regional Banks,NYSE
+GGAL,"Grupo Financiero Galicia Sa, Buenos Aires",Depository Receipt,47.57,$6.00B,Financials,Banks,Diversified Banks,NASDAQ
+GPN,Global Payments Inc,Common Stock,65.07,$17.26B,Financials,Financial Services,Transaction & Payment Processing Services,NYSE
+GS,Goldman Sachs Group Inc (The),Common Stock,905.75,$254.92B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+HBAN,Huntington Bancshares Inc,Common Stock,16.35,$32.35B,Financials,Banks,Regional Banks,NASDAQ
+HSBC,HSBC Holdings PLC,Depository Receipt,90.27,$292.64B,Financials,Banks,Diversified Banks,NYSE
+HWC,Hancock Whitney Corp,Common Stock,67.01,$5.31B,Financials,Banks,Regional Banks,NASDAQ
+HDB,HDFC Bank Limited,Depository Receipt,27.11,$130.89B,Financials,Banks,Diversified Banks,NYSE
+HIG,Hartford Insurance Group Inc (The),Common Stock,138.9,$37.45B,Financials,Insurance,Property & Casualty Insurance,NYSE
+SNEX,StoneX Group Inc,Common Stock,91.62,$6.84B,Financials,Capital Markets,Investment Banking & Brokerage,NASDAQ
+IBN,ICICI Bank Ltd,Depository Receipt,27.51,$93.06B,Financials,Banks,Diversified Banks,NYSE
+ING,ING Groep NV,Depository Receipt,28.31,$78.06B,Financials,Banks,Diversified Banks,NYSE
+ITUB,Itau Unibanco Holding SA,Depository Receipt,8.82,$45.38B,Financials,Banks,Diversified Banks,NYSE
+IX,Orix Corp,Depository Receipt,31.37,$33.02B,Financials,Financial Services,Diversified Financial Services,NYSE
+JKHY,Henry (Jack) & Associates Inc,Common Stock,157.98,$11.43B,Financials,Financial Services,Transaction & Payment Processing Services,NASDAQ
+JPM,JPMorgan Chase & Co,Common Stock,307.97,$797.69B,Financials,Banks,Diversified Banks,NYSE
+KB,KB Financial Group Inc,Depository Receipt,106.97,$35.79B,Financials,Banks,Diversified Banks,NYSE
+KEY,KeyCorp,Common Stock,21.29,$22.12B,Financials,Banks,Diversified Banks,NYSE
+LNC,Lincoln National Corp,Common Stock,35.66,$6.64B,Financials,Insurance,Life & Health Insurance,NYSE
+L,Loews Corp,Common Stock,109.79,$22.21B,Financials,Insurance,Property & Casualty Insurance,NYSE
+JEF,Jefferies Financial Group Inc,Common Stock,43.73,$8.60B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+LYG,Lloyds Banking Group PLC,Depository Receipt,5.55,$76.16B,Financials,Banks,Diversified Banks,NYSE
+MCO,Moody's Corp.,Common Stock,447.62,$77.97B,Financials,Capital Markets,Financial Exchanges & Data,NYSE
+MET,MetLife Inc,Common Stock,74.34,$46.43B,Financials,Insurance,Life & Health Insurance,NYSE
+MFC,Manulife Financial Corp,Common Stock,36.51,$59.04B,Financials,Insurance,Life & Health Insurance,NYSE
+SPGI,S&P Global Inc,Common Stock,436.96,$130.37B,Financials,Capital Markets,Financial Exchanges & Data,NYSE
+MKL,Markel Group Inc,Common Stock,1952.34,$23.91B,Financials,Insurance,Property & Casualty Insurance,NYSE
+MKTX,MarketAxess Holdings Inc,Common Stock,176.85,$6.25B,Financials,Capital Markets,Financial Exchanges & Data,NASDAQ
+MRSH,Marsh and McLennan Companies Inc,Common Stock,175.81,$83.41B,Financials,Insurance,Insurance Brokers,NYSE
+MTB,M&T Bank Corp,Common Stock,219.04,$31.60B,Financials,Banks,Regional Banks,NYSE
+MUFG,Mitsubishi UFJ Financial Group Inc,Depository Receipt,18.43,$199.11B,Financials,Banks,Diversified Banks,NYSE
+MTG,MGIC Investment Corp,Common Stock,27.43,$5.81B,Financials,Financial Services,Commercial & Residential Mortgage Finance,NYSE
+MS,Morgan Stanley,Common Stock,176.02,$266.35B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+NLY,Annaly Capital Management Inc,Common Stock (REIT),21.8,$15.25B,Financials,Mortgage Real Estate Investment Trusts (REITs),Mortgage REITs,NYSE
+NMR,Nomura Holdings Inc,Depository Receipt,8.55,$23.41B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+NTRS,Northern Trust Corp,Common Stock,151.74,$26.99B,Financials,Capital Markets,Asset Management & Custody Banks,NASDAQ
+FLG,Flagstar Bank NA,Common Stock,13.94,$5.68B,Financials,Banks,Regional Banks,NYSE
+ONB,Old National Bancorp,Common Stock,23.25,$8.70B,Financials,Banks,Regional Banks,NASDAQ
+ORI,Old Republic International Corp,Common Stock,41.34,$9.86B,Financials,Insurance,Property & Casualty Insurance,NYSE
+OZK,Bank OZK,Common Stock,47.49,$5.15B,Financials,Banks,Regional Banks,NASDAQ
+PFG,Principal Financial Group Inc,Common Stock,94.2,$19.71B,Financials,Insurance,Life & Health Insurance,NASDAQ
+PGR,Progressive Corp (The),Common Stock,198.09,$115.15B,Financials,Insurance,Property & Casualty Insurance,NYSE
+PIPR,Piper Sandler Cos,Common Stock,81.56,$5.58B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+PNC,The PNC Financial Services Group Inc,Common Stock,220.76,$86.29B,Financials,Banks,Diversified Banks,NYSE
+PNFP,Pinnacle Financial Partners Inc,Common Stock,91.09,$13.35B,Financials,Banks,Regional Banks,NYSE
+PB,Prosperity Bancshares Inc,Common Stock,68.55,$6.83B,Financials,Banks,Regional Banks,NYSE
+PRU,Prudential Financial Inc,Common Stock,96.65,$33.88B,Financials,Insurance,Life & Health Insurance,NYSE
+PUK,Prudential PLC,Depository Receipt,30.43,$36.82B,Financials,Insurance,Life & Health Insurance,NYSE
+EG,Everest Group Ltd,Common Stock,333.26,$13.22B,Financials,Insurance,Reinsurance,NYSE
+RF,Regions Financial Corp,Common Stock,27.47,$22.73B,Financials,Banks,Regional Banks,NYSE
+RGA,Reinsurance Group of America Inc,Common Stock,211.3,$13.66B,Financials,Insurance,Reinsurance,NYSE
+RJF,Raymond James Financial Inc.,Common Stock,147.82,$28.06B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+RLI,RLI Corp,Common Stock,58.64,$5.31B,Financials,Insurance,Property & Casualty Insurance,NYSE
+RNR,RenaissanceRe Holdings Ltd,Common Stock,307.08,$13.06B,Financials,Insurance,Reinsurance,NYSE
+RY,Royal Bank of Canada,Common Stock,169.47,$231.17B,Financials,Banks,Diversified Banks,NYSE
+BSAC,Banco Santander-Chile,Depository Receipt,34.54,$15.60B,Financials,Banks,Diversified Banks,NYSE
+SSB,SouthState Bank Corp,Common Stock,97.16,$9.22B,Financials,Banks,Regional Banks,NYSE
+SCHW,Schwab (Charles) Corp,Common Stock,96.7,$162.23B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+SEIC,SEI Investments Co,Common Stock,77.85,$9.19B,Financials,Capital Markets,Asset Management & Custody Banks,NASDAQ
+SF,Stifel Financial Corp.,Common Stock,76.92,$11.39B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+SHG,Shinhan Financial Group Co Ltd,Depository Receipt,66.41,$29.85B,Financials,Banks,Diversified Banks,NYSE
+SLF,Sun Life Financial Inc,Common Stock,65.94,$35.40B,Financials,Insurance,Life & Health Insurance,NYSE
+SMFG,Sumitomo Mitsui Financial Group Inc,Depository Receipt,21.58,$130.22B,Financials,Banks,Diversified Banks,NYSE
+TRV,Travelers Companies Inc (The),Common Stock,301.59,$63.80B,Financials,Insurance,Property & Casualty Insurance,NYSE
+STT,State Street Corporation,Common Stock,136.13,$36.57B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+TD,Toronto-Dominion Bank (The),Common Stock,99.3,$162.10B,Financials,Banks,Diversified Banks,NYSE
+GL,Globe Life Inc,Common Stock,147.85,$11.28B,Financials,Insurance,Life & Health Insurance,NYSE
+TROW,T. Rowe Price Group Inc,Common Stock,91.81,$19.41B,Financials,Capital Markets,Asset Management & Custody Banks,NASDAQ
+AUB,Atlantic Union Bankshares Corp,Common Stock,37.72,$5.20B,Financials,Banks,Regional Banks,NYSE
+UBSI,United Bankshares Inc,Common Stock,43.58,$5.92B,Financials,Banks,Regional Banks,NASDAQ
+UMBF,UMB Financial Corp,Common Stock,120.06,$8.85B,Financials,Banks,Regional Banks,NASDAQ
+UNM,Unum Group,Common Stock,77.55,$12.40B,Financials,Insurance,Life & Health Insurance,NYSE
+USB,U.S. Bancorp,Common Stock,55.36,$83.36B,Financials,Banks,Diversified Banks,NYSE
+VLY,Valley National Bancorp,Common Stock,12.96,$7.00B,Financials,Banks,Regional Banks,NASDAQ
+WBS,Webster Financial Corp,Common Stock,71.64,$11.25B,Financials,Banks,Regional Banks,NYSE
+WFC,Wells Fargo & Co,Common Stock,84.66,$251.38B,Financials,Banks,Diversified Banks,NYSE
+WTW,Willis Towers Watson plc,Common Stock,290.82,$26.87B,Financials,Insurance,Insurance Brokers,NASDAQ
+WTFC,Wintrust Financial Corp.,Common Stock,145.46,$9.45B,Financials,Banks,Regional Banks,NASDAQ
+WTM,White Mountains Insurance Group Ltd,Common Stock,2277.21,$5.49B,Financials,Insurance,Property & Casualty Insurance,NYSE
+WEX,WEX Inc,Common Stock,158.32,$5.41B,Financials,Financial Services,Transaction & Payment Processing Services,NYSE
+ZION,Zions Bancorporation National Association,Common Stock,61,$8.69B,Financials,Banks,Regional Banks,NASDAQ
+AX,Axos Financial Inc.,Common Stock,93.15,$5.06B,Financials,Banks,Regional Banks,NYSE
+MORN,Morningstar Inc,Common Stock,172.78,$6.80B,Financials,Capital Markets,Financial Exchanges & Data,NASDAQ
+NDAQ,Nasdaq Inc,Common Stock,88.09,$49.11B,Financials,Capital Markets,Financial Exchanges & Data,NASDAQ
+BBVA,Banco Bilbao Vizcaya Argentaria SA,Depository Receipt,23.39,$126.46B,Financials,Banks,Diversified Banks,NYSE
+WAL,Western Alliance Bancorporation,Common Stock,75,$7.91B,Financials,Banks,Regional Banks,NYSE
+AMP,Ameriprise Financial Inc,Common Stock,453.1,$39.18B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+FNF,Fidelity National Financial Inc,Common Stock,47.6,$12.63B,Financials,Insurance,Property & Casualty Insurance,NYSE
+ICE,Intercontinental Exchange Inc,Common Stock,167.79,$94.20B,Financials,Capital Markets,Financial Exchanges & Data,NYSE
+GLXY,Galaxy Digital Inc,Common Stock,19,$7.29B,Financials,Capital Markets,Asset Management & Custody Banks,NASDAQ
+EVR,Evercore Inc,Common Stock,326.02,$12.87B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+MA,Mastercard Inc,Common Stock,507.12,$444.37B,Financials,Financial Services,Transaction & Payment Processing Services,NYSE
+HOMB,Home Bancshares Inc,Common Stock,28.15,$5.54B,Financials,Banks,Regional Banks,NYSE
+MFG,Mizuho Financial Group Inc,Depository Receipt,8.8,$100.59B,Financials,Banks,Diversified Banks,NYSE
+IBKR,Interactive Brokers Group Inc,Common Stock,72.31,$115.54B,Financials,Capital Markets,Investment Banking & Brokerage,NASDAQ
+SAN,Banco Santander SA,Depository Receipt,12.2,$167.63B,Financials,Banks,Diversified Banks,NYSE
+MSCI,MSCI Inc,Common Stock,556.93,$40.02B,Financials,Capital Markets,Financial Exchanges & Data,NYSE
+V,Visa Inc,Common Stock,308.96,$576.66B,Financials,Financial Services,Transaction & Payment Processing Services,NYSE
+AGNC,AGNC Investment Corp,Common Stock (REIT),10.32,$11.33B,Financials,Mortgage Real Estate Investment Trusts (REITs),Mortgage REITs,NASDAQ
+CBC,Central Bancompany Inc,Common Stock,24.84,$5.82B,Financials,Banks,Regional Banks,NASDAQ
+STWD,Starwood Property Trust Inc,Common Stock (REIT),17.58,$6.40B,Financials,Mortgage Real Estate Investment Trusts (REITs),Mortgage REITs,NYSE
+BSBR,Banco Santander Brasil SA,Depository Receipt,6.21,$22.80B,Financials,Banks,Diversified Banks,NYSE
+BX,Blackstone Inc,Common Stock,117.67,$133.90B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+PRI,Primerica Inc,Common Stock,264.09,$8.05B,Financials,Insurance,Life & Health Insurance,NYSE
+FAF,First American Financial Corp,Common Stock,63.39,$6.22B,Financials,Insurance,Property & Casualty Insurance,NYSE
+KKR,KKR & Co Inc,Common Stock,93.96,$80.91B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+LPLA,LPL Financial Holdings Inc,Common Stock (REIT),310.79,$23.85B,Financials,Capital Markets,Investment Banking & Brokerage,NASDAQ
+CPAY,Corpay Inc,Common Stock,303.92,$20.17B,Financials,Financial Services,Transaction & Payment Processing Services,NYSE
+APO,Apollo Global Management Inc,Common Stock,107.05,$60.92B,Financials,Financial Services,Diversified Financial Services,NYSE
+CG,Carlyle Group Inc (The),Common Stock,48.18,$16.98B,Financials,Capital Markets,Asset Management & Custody Banks,NASDAQ
+VOYA,Voya Financial Inc,Common Stock,69.61,$6.29B,Financials,Financial Services,Diversified Financial Services,NYSE
+RITM,Rithm Capital Corp,Common Stock (REIT),9.79,$5.28B,Financials,Mortgage Real Estate Investment Trusts (REITs),Mortgage REITs,NYSE
+OMF,OneMain Holdings Inc,Common Stock,56.01,$6.31B,Financials,Consumer Finance,Consumer Finance,NYSE
+ESNT,Essent Group Ltd,Common Stock,61.15,$5.64B,Financials,Financial Services,Commercial & Residential Mortgage Finance,NYSE
+ALLY,Ally Financial Inc,Common Stock,41.71,$12.41B,Financials,Consumer Finance,Consumer Finance,NYSE
+ARES,Ares Management Corp,Common Stock,104.83,$33.69B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+SYF,Synchrony Financial,Common Stock,71.97,$23.93B,Financials,Consumer Finance,Consumer Finance,NYSE
+CFG,Citizens Financial Group Inc,Common Stock,63.78,$26.18B,Financials,Banks,Regional Banks,NYSE
+UBS,UBS Group AG,Common Stock,41.34,$123.62B,Financials,Capital Markets,Diversified Capital Markets,NYSE
+VIRT,Virtu Financial Inc,Common Stock,48.94,$7.37B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+PYPL,PayPal Holdings Inc,Common Stock,45.85,$41.31B,Financials,Financial Services,Transaction & Payment Processing Services,NASDAQ
+HLI,Houlihan Lokey Inc,Common Stock,147.84,$9.97B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+PJT,PJT Partners Inc,Common Stock,146.74,$5.59B,Financials,Capital Markets,Investment Banking & Brokerage,NYSE
+XYZ,Block Inc,Common Stock,62.83,$35.93B,Financials,Financial Services,Transaction & Payment Processing Services,NYSE
+KNSL,Kinsale Capital Group Inc,Common Stock,356.42,$7.99B,Financials,Insurance,Property & Casualty Insurance,NYSE
+HLNE,Hamilton Lane Inc,Common Stock,97.11,$5.39B,Financials,Capital Markets,Asset Management & Custody Banks,NASDAQ
+JHG,Janus Henderson Group PLC,Common Stock,51.6,$7.93B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+EQH,Equitable Holdings Inc,Common Stock,38.84,$10.62B,Financials,Financial Services,Diversified Financial Services,NYSE
+WF,Woori Financial Group Inc,Depository Receipt,69.85,$16.20B,Financials,Banks,Diversified Banks,NYSE
+FUTU,Futu Holdings Limited,Depository Receipt,157.14,$13.36B,Financials,Capital Markets,Investment Banking & Brokerage,NASDAQ
+TW,Tradeweb Markets Inc,Common Stock,126.44,$26.58B,Financials,Capital Markets,Financial Exchanges & Data,NASDAQ
+KSPI,Joint Stock Company Kaspi kz,Depository Receipt,76.4,$14.13B,Financials,Consumer Finance,Consumer Finance,NASDAQ
+IFS,Intercorp Financial Services Inc,Common Stock,51.86,$5.58B,Financials,Banks,Diversified Banks,NYSE
+OBDC,Blue Owl Capital Corp,Common Stock,10.75,$5.41B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+XP,XP Inc,Common Stock,19.79,$9.69B,Financials,Capital Markets,Investment Banking & Brokerage,NASDAQ
+RKT,Rocket Cos Inc,Common Stock,15.2,$40.92B,Financials,Financial Services,Commercial & Residential Mortgage Finance,NYSE
+STEP,StepStone Group Inc,Common Stock,48.54,$5.62B,Financials,Capital Markets,Asset Management & Custody Banks,NASDAQ
+SOFI,SoFi Technologies Inc,Common Stock,16.49,$20.54B,Financials,Consumer Finance,Consumer Finance,NASDAQ
+OWL,Blue Owl Capital Inc,Common Stock,8.32,$13.17B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+AFRM,Affirm Holdings Inc,Common Stock,49.81,$15.79B,Financials,Financial Services,Transaction & Payment Processing Services,NASDAQ
+COIN,COINBASE GLOBAL INC,Common Stock,175.09,$46.26B,Financials,Capital Markets,Financial Exchanges & Data,NASDAQ
+ACT,Enact Holdings Inc,Common Stock,42.29,$5.90B,Financials,Financial Services,Commercial & Residential Mortgage Finance,NASDAQ
+RYAN,Ryan Specialty Holdings Inc,Common Stock,34.91,$8.85B,Financials,Insurance,Insurance Brokers,NYSE
+HOOD,Robinhood Markets Inc,Common Stock,71.83,$62.71B,Financials,Capital Markets,Investment Banking & Brokerage,NASDAQ
+JXN,Jackson Financial Inc,Common Stock,107.71,$7.27B,Financials,Financial Services,Diversified Financial Services,NYSE
+TOST,Toast Inc,Common Stock,26.21,$15.30B,Financials,Financial Services,Transaction & Payment Processing Services,NYSE
+BXSL,Blackstone Secured Lending Fund,Common Stock,23.11,$5.51B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+NU,Nu Holdings Ltd,Common Stock,14.51,$68.56B,Financials,Banks,Diversified Banks,NYSE
+TPG,TPG Inc,Common Stock,38.26,$14.59B,Financials,Capital Markets,Asset Management & Custody Banks,NASDAQ
+NWG,NatWest Group plc,Depository Receipt,16.41,$61.22B,Financials,Banks,Diversified Banks,NYSE
+CRBG,Corebridge Financial Inc,Common Stock,24.9,$11.01B,Financials,Financial Services,Diversified Financial Services,NYSE
+BAM,Brookfield Asset Management Ltd,Common Stock,45.26,$72.05B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+OTF,Blue Owl Technology Finance Corp,Common Stock,11.16,$5.13B,Financials,Capital Markets,Asset Management & Custody Banks,NYSE
+CHYM,Chime Financial Inc,Common Stock,20.24,$7.35B,Financials,Financial Services,Transaction & Payment Processing Services,NASDAQ
+BLSH,Bullish,Common Stock,38.63,$5.65B,Financials,Capital Markets,Financial Exchanges & Data,NYSE
+FIGR,Figure Technology Solutions Inc,Common Stock,34.34,$6.63B,Financials,Consumer Finance,Consumer Finance,NASDAQ
+PAYP,PayPay Corp,Depository Receipt,20.36,$13.61B,Financials,Financial Services,Transaction & Payment Processing Services,NASDAQ

@@ -1,0 +1,64 @@
+Symbol,Company Name,Security Type,Security Price,Market Capitalization,Sector,Industry,Sub-Industry,Exchange
+ADC,Agree Realty Corp,Common Stock (REIT),76.76,$9.18B,Real Estate,Retail REITs,Retail REITs,NYSE
+PLD,Prologis Inc,Common Stock (REIT),137.41,$124.19B,Real Estate,Industrial REITs,Industrial REITs,NYSE
+AMT,American Tower Corp,Common Stock (REIT),176.18,$81.14B,Real Estate,Specialized REITs,Telecom Tower REITs,NYSE
+ARE,Alexandria Real Estate Equities Inc.,Common Stock (REIT),44.84,$7.64B,Real Estate,Health Care REITs,Health Care REITs,NYSE
+AVB,AvalonBay Communities Inc.,Common Stock,168.5,$23.33B,Real Estate,Residential REITs,Multi-Family Residential REITs,NYSE
+BXP,BXP Inc,Common Stock (REIT),52.54,$8.20B,Real Estate,Office REITs,Office REITs,NYSE
+CBRE,CBRE Group Inc,Common Stock,142.49,$40.46B,Real Estate,Real Estate Management & Development,Real Estate Services,NYSE
+CCI,Crown Castle Inc,Common Stock (REIT),85.52,$37.05B,Real Estate,Specialized REITs,Telecom Tower REITs,NYSE
+CPT,Camden Property Trust,Common Stock (REIT),102.27,$10.56B,Real Estate,Residential REITs,Multi-Family Residential REITs,NYSE
+CSGP,CoStar Group Inc,Common Stock,38.82,$16.57B,Real Estate,Real Estate Management & Development,Real Estate Services,NASDAQ
+DLR,Digital Realty Trust Inc,Common Stock (REIT),185.63,$62.68B,Real Estate,Specialized REITs,Data Center REITs,NYSE
+EGP,EastGroup Properties Inc.,Common Stock (REIT),193.06,$10.12B,Real Estate,Industrial REITs,Industrial REITs,NYSE
+ELS,Equity LifeStyle Properties Inc,Common Stock (REIT),63.78,$12.31B,Real Estate,Residential REITs,Single-Family Residential REITs,NYSE
+EQIX,Equinix Inc,Common Stock (REIT),1017.66,$99.34B,Real Estate,Specialized REITs,Data Center REITs,NASDAQ
+EQR,Equity Residential,Common Stock,60.8,$22.73B,Real Estate,Residential REITs,Multi-Family Residential REITs,NYSE
+ESS,Essex Property Trust Inc.,Common Stock,251.9,$16.01B,Real Estate,Residential REITs,Multi-Family Residential REITs,NYSE
+EXR,Extra Space Storage Inc,Common Stock (REIT),137.73,$28.08B,Real Estate,Specialized REITs,Self-Storage REITs,NYSE
+FR,First Industrial Realty Trust Inc,Common Stock (REIT),60.22,$7.83B,Real Estate,Industrial REITs,Industrial REITs,NYSE
+FRT,Federal Realty Investment Trust,Common Stock (REIT),107.39,$9.25B,Real Estate,Retail REITs,Retail REITs,NYSE
+CIGI,Colliers International Group Inc,Common Stock,110.42,$5.52B,Real Estate,Real Estate Management & Development,Real Estate Services,NASDAQ
+RHP,Ryman Hospitality Properties Inc,Common Stock (REIT),96.85,$5.92B,Real Estate,Hotel & Resort REITs,Hotel & Resort REITs,NYSE
+WELL,Welltower Inc,Common Stock (REIT),204.7,$140.65B,Real Estate,Health Care REITs,Health Care REITs,NYSE
+DOC,Healthpeak Properties Inc,Common Stock (REIT),16.68,$11.74B,Real Estate,Health Care REITs,Health Care REITs,NYSE
+HST,Host Hotels & Resorts Inc,Common Stock (REIT),19.71,$13.13B,Real Estate,Hotel & Resort REITs,Hotel & Resort REITs,NASDAQ
+IRM,Iron Mountain Inc,Common Stock (REIT),106.97,$31.15B,Real Estate,Specialized REITs,Other Specialized REITs,NYSE
+JLL,Jones Lang LaSalle Inc,Common Stock,318.53,$14.44B,Real Estate,Real Estate Management & Development,Real Estate Services,NYSE
+KIM,Kimco Realty Corp,Common Stock (REIT),22.67,$15.27B,Real Estate,Retail REITs,Retail REITs,NYSE
+KRG,Kite Realty Group Trust,Common Stock (REIT),25.14,$5.05B,Real Estate,Retail REITs,Retail REITs,NYSE
+LAMR,Lamar Advertising Co,Common Stock (REIT),132.12,$13.06B,Real Estate,Specialized REITs,Other Specialized REITs,NASDAQ
+MAA,Mid-America Apartment Communities Inc,Common Stock (REIT),126.09,$14.46B,Real Estate,Residential REITs,Multi-Family Residential REITs,NYSE
+MAC,Macerich Co (The),Common Stock (REIT),20.68,$5.09B,Real Estate,Retail REITs,Retail REITs,NYSE
+NNN,NNN REIT Inc,Common Stock (REIT),43.55,$8.23B,Real Estate,Retail REITs,Retail REITs,NYSE
+O,Realty Income Corp,Common Stock (REIT),62.79,$58.03B,Real Estate,Retail REITs,Retail REITs,NYSE
+OHI,Omega Healthcare Investors Inc.,Common Stock (REIT),45.41,$13.43B,Real Estate,Health Care REITs,Health Care REITs,NYSE
+PSA,Public Storage,Common Stock (REIT),290,$49.02B,Real Estate,Specialized REITs,Self-Storage REITs,NYSE
+REG,Regency Centers Corp.,Common Stock (REIT),77.86,$14.16B,Real Estate,Retail REITs,Retail REITs,NASDAQ
+RYN,Rayonier Inc.,Common Stock (REIT),21.27,$6.32B,Real Estate,Specialized REITs,Timber REITs,NYSE
+SBAC,SBA Communications Corp,Common Stock,218.71,$21.78B,Real Estate,Specialized REITs,Telecom Tower REITs,NASDAQ
+SPG,Simon Property Group Inc,Common Stock (REIT),194.04,$61.91B,Real Estate,Retail REITs,Retail REITs,NYSE
+SUI,Sun Communities Inc,Common Stock (REIT),128.62,$15.64B,Real Estate,Residential REITs,Single-Family Residential REITs,NYSE
+UDR,UDR Inc,Common Stock (REIT),35.02,$11.31B,Real Estate,Residential REITs,Multi-Family Residential REITs,NYSE
+VTR,Ventas Inc.,Common Stock (REIT),84.05,$39.77B,Real Estate,Health Care REITs,Health Care REITs,NYSE
+WPC,W. P. Carey Inc,Common Stock (REIT),71.42,$15.55B,Real Estate,Diversified REITs,Diversified REITs,NYSE
+WY,Weyerhaeuser Co,Common Stock (REIT),24.9,$17.32B,Real Estate,Specialized REITs,Timber REITs,NYSE
+CUBE,CubeSmart,Common Stock (REIT),38.47,$8.49B,Real Estate,Specialized REITs,Self-Storage REITs,NYSE
+TRNO,Terreno Realty Corp,Common Stock (REIT),64.06,$6.68B,Real Estate,Industrial REITs,Industrial REITs,NYSE
+SBRA,Sabra Health Care REIT Inc,Common Stock (REIT),20.08,$5.05B,Real Estate,Health Care REITs,Health Care REITs,NASDAQ
+STAG,STAG Industrial Inc,Common Stock (REIT),37.97,$7.11B,Real Estate,Industrial REITs,Industrial REITs,NYSE
+HR,Healthcare Realty Trust Inc,Common Stock (REIT),17.61,$6.17B,Real Estate,Health Care REITs,Health Care REITs,NYSE
+REXR,Rexford Industrial Realty Inc,Common Stock (REIT),34.23,$7.68B,Real Estate,Industrial REITs,Industrial REITs,NYSE
+AMH,American Homes 4 Rent,Common Stock (REIT),29.4,$10.65B,Real Estate,Residential REITs,Single-Family Residential REITs,NYSE
+GLPI,Gaming and Leisure Properties Inc,Common Stock (REIT),46.15,$13.01B,Real Estate,Specialized REITs,Other Specialized REITs,NASDAQ
+BRX,Brixmor Property Group Inc,Common Stock (REIT),29.37,$8.97B,Real Estate,Retail REITs,Retail REITs,NYSE
+CTRE,CareTrust REIT Inc,Common Stock (REIT),38.77,$8.61B,Real Estate,Health Care REITs,Health Care REITs,NYSE
+FSV,FirstService Corp,Common Stock,144.83,$6.57B,Real Estate,Real Estate Management & Development,Real Estate Services,NASDAQ
+Z,Zillow Group Inc,Common Stock,41.43,$7.66B,Real Estate,Real Estate Management & Development,Real Estate Services,NASDAQ
+INVH,Invitation Homes Inc,Common Stock,25.81,$15.36B,Real Estate,Residential REITs,Single-Family Residential REITs,NYSE
+VICI,VICI Properties Inc,Common Stock,27.73,$29.75B,Real Estate,Specialized REITs,Other Specialized REITs,NYSE
+EPRT,Essential Properties Realty Trust Inc,Common Stock,31.68,$6.65B,Real Estate,Diversified REITs,Diversified REITs,NYSE
+BEKE,KE Holdings Inc,Depository Receipt,15.63,$17.87B,Real Estate,Real Estate Management & Development,Real Estate Services,NYSE
+AHR,American Healthcare REIT Inc,Common Stock,48.4,$8.95B,Real Estate,Health Care REITs,Health Care REITs,NYSE
+LB,LandBridge Co LLC,Common Stock,68.67,$5.50B,Real Estate,Real Estate Management & Development,Real Estate Operating Companies,NYSE
+LINE,Lineage Inc,Common Stock,34.42,$7.41B,Real Estate,Industrial REITs,Industrial REITs,NASDAQ

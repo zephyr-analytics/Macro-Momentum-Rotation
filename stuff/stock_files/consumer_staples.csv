@@ -1,0 +1,61 @@
+Symbol,Company Name,Security Type,Security Price,Market Capitalization,Sector,Industry,Sub-Industry,Exchange
+ADM,Archer-Daniels-Midland Co,Common Stock,71.72,$34.77B,Consumer Staples,Food Products,Agricultural Products & Services,NYSE
+BF-B,Brown-Forman Corp,Common Stock,26.85,$7.71B,Consumer Staples,Beverages,Distillers & Vintners,NYSE
+BG,Bunge Global SA,Common Stock,127.15,$24.58B,Consumer Staples,Food Products,Agricultural Products & Services,NYSE
+BTI,British American Tobacco PLC,Depository Receipt,59.95,$127.75B,Consumer Staples,Tobacco,Tobacco,NYSE
+CAG,Conagra Brands Inc,Common Stock,15.58,$7.41B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE
+CASY,Casey's General Stores Inc.,Common Stock,758.37,$27.42B,Consumer Staples,Consumer Staples Distribution & Retail,Food Retail,NASDAQ
+CCEP,Coca-Cola Europacific Partners PLC,Common Stock,97.42,$41.82B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NASDAQ
+CHD,Church & Dwight Co Inc,Common Stock,94.2,$21.92B,Consumer Staples,Household Products,Household Products,NYSE
+CL,Colgate-Palmolive Co,Common Stock,85.55,$66.70B,Consumer Staples,Household Products,Household Products,NYSE
+CLX,Clorox Co (The),Common Stock,105.67,$12.46B,Consumer Staples,Household Products,Household Products,NYSE
+COKE,Coca Cola Consolidated Inc,Common Stock,202.36,$13.11B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NASDAQ
+COST,Costco Wholesale Corp,Common Stock,1030.27,$449.51B,Consumer Staples,Consumer Staples Distribution & Retail,Consumer Staples Merchandise Retail,NASDAQ
+PRMB,Primo Brands Corp,Common Stock,19.54,$6.66B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NYSE
+CPB,Campbell's Co (The),Common Stock,20.69,$6.23B,Consumer Staples,Food Products,Packaged Foods & Meats,NASDAQ
+INGR,Ingredion Inc,Common Stock,113.56,$7.13B,Consumer Staples,Food Products,Agricultural Products & Services,NYSE
+DAR,Darling Ingredients Inc,Common Stock,63.05,$10.08B,Consumer Staples,Food Products,Agricultural Products & Services,NYSE
+DEO,Diageo PLC,Depository Receipt,77.09,$41.26B,Consumer Staples,Beverages,Distillers & Vintners,NYSE
+DLTR,Dollar Tree Inc,Common Stock,105.62,$21.00B,Consumer Staples,Consumer Staples Distribution & Retail,Consumer Staples Merchandise Retail,NASDAQ
+EL,Estee Lauder Cos Inc (The),Common Stock,71.44,$25.02B,Consumer Staples,Personal Care Products,Personal Care Products,NYSE
+FMX,Fomento Economico Mexican SAB de CV,Depository Receipt,115.57,$22.90B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NYSE
+GIS,General Mills Inc.,Common Stock,36.6,$19.64B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE
+MNST,Monster Beverage Corp,Common Stock,75.14,$70.84B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NASDAQ
+HRL,Hormel Foods Corp,Common Stock,21.64,$11.80B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE
+HSY,Hershey Co (The),Common Stock,208.99,$41.95B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE
+MDLZ,Mondelez International Inc,Common Stock,58.83,$73.81B,Consumer Staples,Food Products,Packaged Foods & Meats,NASDAQ
+KMB,Kimberly-Clark Corporation,Common Stock,97,$30.89B,Consumer Staples,Household Products,Household Products,NASDAQ
+KO,Coca-Cola Co (The),Common Stock,77.29,$326.73B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NYSE
+KOF,Coca-Cola Femsa SAB De CV,Depository Receipt,104.25,$5.19B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NYSE
+KR,Kroger Co. (The),Common Stock,70.96,$44.52B,Consumer Staples,Consumer Staples Distribution & Retail,Food Retail,NYSE
+MKC,McCormick & Co Inc,Common Stock,50.51,$12.96B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE
+MO,Altria Group Inc,Common Stock,66.8,$110.72B,Consumer Staples,Tobacco,Tobacco,NYSE
+PEP,PepsiCo Inc,Common Stock,154.8,$209.43B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NASDAQ
+PG,Procter & Gamble Co (The),Common Stock,144.9,$328.38B,Consumer Staples,Household Products,Household Products,NYSE
+SEB,Seaboard Corp,Common Stock,5868.42,$5.53B,Consumer Staples,Food Products,Packaged Foods & Meats,AMEX
+SJM,The J M Smucker Company,Common Stock,93.79,$10.04B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE
+STZ,Constellation Brands Inc,Common Stock,150.26,$26.68B,Consumer Staples,Beverages,Distillers & Vintners,NYSE
+SYY,Sysco Corporation,Common Stock,75.15,$35.02B,Consumer Staples,Consumer Staples Distribution & Retail,Food Distributors,NYSE
+TGT,Target Corp,Common Stock,123.12,$54.13B,Consumer Staples,Consumer Staples Distribution & Retail,Consumer Staples Merchandise Retail,NYSE
+TSN,Tyson Foods Inc.,Common Stock,64.65,$22.60B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE
+UL,Unilever PLC,Depository Receipt,58.25,$121.70B,Consumer Staples,Personal Care Products,Personal Care Products,NYSE
+WMT,Walmart Inc,Common Stock,127.26,$976.54B,Consumer Staples,Consumer Staples Distribution & Retail,Consumer Staples Merchandise Retail,NASDAQ
+TAP,Molson Coors Beverage Company,Common Stock,43.9,$7.91B,Consumer Staples,Beverages,Brewers,NYSE
+CELH,Celsius Holdings Inc,Common Stock,36.02,$8.86B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NASDAQ
+PM,Philip Morris International Inc,Common Stock,160.94,$245.45B,Consumer Staples,Tobacco,Tobacco,NYSE
+KDP,Keurig Dr Pepper Inc,Common Stock,25.84,$34.61B,Consumer Staples,Beverages,Soft Drinks & Non-alcoholic Beverages,NASDAQ
+BUD,Anheuser-Busch InBev SA/NV,Depository Receipt,74.39,$123.69B,Consumer Staples,Beverages,Brewers,NYSE
+DG,Dollar General Corporation,Common Stock,123.05,$26.69B,Consumer Staples,Consumer Staples Distribution & Retail,Consumer Staples Merchandise Retail,NYSE
+PPC,Pilgrim's Pride Corp,Common Stock,35.94,$8.47B,Consumer Staples,Food Products,Packaged Foods & Meats,NASDAQ
+SFM,Sprouts Farmers Market Inc,Common Stock,75.75,$7.29B,Consumer Staples,Consumer Staples Distribution & Retail,Food Retail,NASDAQ
+KHC,The Kraft Heinz Co,Common Stock,22.95,$27.49B,Consumer Staples,Food Products,Packaged Foods & Meats,NASDAQ
+PFGC,PERFORMANCE FOOD GROUP COMPANY,Common Stock,87.75,$13.22B,Consumer Staples,Consumer Staples Distribution & Retail,Food Distributors,NYSE
+USFD,US Foods Holding Corp,Common Stock,91.68,$19.68B,Consumer Staples,Consumer Staples Distribution & Retail,Food Distributors,NYSE
+LW,Lamb Weston Holdings Inc,Common Stock,41.59,$5.60B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE
+BJ,BJ's Wholesale Club Holdings Inc,Common Stock,95.16,$12.34B,Consumer Staples,Consumer Staples Distribution & Retail,Consumer Staples Merchandise Retail,NYSE
+ACI,Albertsons Cos Inc,Common Stock,17.71,$9.28B,Consumer Staples,Consumer Staples Distribution & Retail,Food Retail,NYSE
+KVUE,Kenvue Inc,Common Stock,17.34,$32.07B,Consumer Staples,Personal Care Products,Personal Care Products,NYSE
+CART,Maplebear Inc,Common Stock,39.6,$9.89B,Consumer Staples,Consumer Staples Distribution & Retail,Food Retail,NASDAQ
+SFD,Smithfield Foods Inc,Common Stock,29.16,$11.17B,Consumer Staples,Food Products,Packaged Foods & Meats,NASDAQ
+JBS,JBS NV,Common Stock,18.18,$18.75B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE
+MICC,The Magnum Ice Cream Company NV,Common Stock,14.57,$8.79B,Consumer Staples,Food Products,Packaged Foods & Meats,NYSE

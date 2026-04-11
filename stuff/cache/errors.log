@@ -1,0 +1,18 @@
+
+[ERROR] run_analysis
+Traceback (most recent call last):
+  File "c:\Users\monic\Actual_Drive_Storage\Macro-Momentum-Rotation\stuff\dashboard.py", line 811, in run_analysis
+    return _run_analysis_inner(top_per_file, top_n, max_weight_pct)
+  File "c:\Users\monic\Actual_Drive_Storage\Macro-Momentum-Rotation\stuff\dashboard.py", line 906, in _run_analysis_inner
+    fig_w.update_layout(**BASE_LAYOUT,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+        title=dict(text="Final portfolio weights", font=dict(size=13), x=0),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        xaxis_title="Weight %",
+        ^^^^^^^^^^^^^^^^^^^^^^^
+        height=max(200, len(t_s) * 36 + 80),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        margin=dict(l=12, r=60, t=40, b=12))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: plotly.graph_objs._figure.Figure.update_layout() got multiple values for keyword argument 'margin'
+

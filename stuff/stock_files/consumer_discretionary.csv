@@ -1,0 +1,134 @@
+Symbol,Company Name,Security Type,Security Price,Market Capitalization,Sector,Industry,Sub-Industry,Exchange
+ALV,Autoliv Inc,Common Stock,110.51,$7.80B,Consumer Discretionary,Automobile Components,Automotive Parts & Equipment,NYSE
+AMZN,Amazon.com Inc,Common Stock,221.25,$2.29T,Consumer Discretionary,Broadline Retail,Broadline Retail,NASDAQ
+AN,AutoNation Inc,Common Stock,196.91,$6.64B,Consumer Discretionary,Specialty Retail,Automotive Retail,NYSE
+AZO,AutoZone Inc,Common Stock,3464.93,$55.81B,Consumer Discretionary,Specialty Retail,Automotive Retail,NYSE
+BBY,Best Buy Co Inc,Common Stock,64.48,$13.39B,Consumer Discretionary,Specialty Retail,Computer & Electronics Retail,NYSE
+BWA,BorgWarner Inc,Common Stock,54.96,$10.80B,Consumer Discretionary,Automobile Components,Automotive Parts & Equipment,NYSE
+BYD,Boyd Gaming Corp,Common Stock,86.21,$6.28B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NYSE
+CCL,Carnival Corporation & Plc,Common Stock,28.03,$31.22B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NYSE
+CHDN,Churchill Downs Inc,Common Stock,88.48,$6.17B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NASDAQ
+TPR,Tapestry Inc,Common Stock,150.57,$28.39B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods","Apparel, Accessories & Luxury Goods",NYSE
+TCOM,Trip com Group Ltd,Depository Receipt,51.87,$32.82B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NASDAQ
+DDS,Dillard's Inc.,Common Stock,596.74,$8.98B,Consumer Discretionary,Broadline Retail,Broadline Retail,NYSE
+DECK,Deckers Outdoor Corp,Common Stock,106.35,$14.23B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods",Footwear,NYSE
+DHI,D.R. Horton Inc,Common Stock,142.68,$39.71B,Consumer Discretionary,Household Durables,Homebuilding,NYSE
+DKS,DICK'S Sporting Goods Inc,Common Stock,204.75,$17.84B,Consumer Discretionary,Specialty Retail,Other Specialty Retail,NYSE
+DPZ,Domino's Pizza Inc,Common Stock,376.24,$12.38B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NASDAQ
+DRI,Darden Restaurants Inc,Common Stock,195.65,$21.83B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+EAT,Brinker International Inc.,Common Stock,153.65,$6.46B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+EBAY,eBay Inc.,Common Stock,96.79,$43.01B,Consumer Discretionary,Broadline Retail,Broadline Retail,NASDAQ
+F,Ford Motor Co,Common Stock,12.18,$46.21B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NYSE
+STLA,Stellantis NV,Common Stock,7.76,$21.55B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NYSE
+GIL,Gildan Activewear Inc,Common Stock,57.57,$10.02B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods","Apparel, Accessories & Luxury Goods",NYSE
+GME,GameStop Corp.,Common Stock,22.91,$10.51B,Consumer Discretionary,Specialty Retail,Computer & Electronics Retail,NYSE
+GPC,Genuine Parts Co,Common Stock,107.41,$14.45B,Consumer Discretionary,Distributors,Distributors,NYSE
+GAP,Gap Inc,Common Stock,25.43,$9.03B,Consumer Discretionary,Specialty Retail,Apparel Retail,NYSE
+GRMN,Garmin Ltd,Common Stock,252.79,$46.44B,Consumer Discretionary,Household Durables,Consumer Electronics,NYSE
+HAS,Hasbro Inc.,Common Stock,93.85,$12.58B,Consumer Discretionary,Leisure Products,Leisure Products,NASDAQ
+HD,Home Depot Inc. (The),Common Stock,336.16,$317.50B,Consumer Discretionary,Specialty Retail,Home Improvement Retail,NYSE
+HMC,Honda Motor Co Ltd,Depository Receipt,24.5,$30.48B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NYSE
+KMX,CarMax Inc,Common Stock,44.24,$6.14B,Consumer Discretionary,Specialty Retail,Automotive Retail,NYSE
+LAD,Lithia Motors Inc.,Common Stock,263.28,$6.09B,Consumer Discretionary,Specialty Retail,Automotive Retail,NYSE
+LEN,Lennar Corp,Common Stock,88.63,$18.54B,Consumer Discretionary,Household Durables,Homebuilding,NYSE
+LKQ,LKQ Corporation,Common Stock,29.51,$7.35B,Consumer Discretionary,Distributors,Distributors,NASDAQ
+LOW,Lowe's Cos Inc,Common Stock,243.66,$129.72B,Consumer Discretionary,Specialty Retail,Home Improvement Retail,NYSE
+LVS,Las Vegas Sands Corp,Common Stock,54.6,$35.85B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NYSE
+MAR,Marriott International Inc,Common Stock,348.58,$87.67B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NASDAQ
+MCD,McDonald's Corp,Common Stock,307.01,$216.57B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+MGA,Magna International Inc,Common Stock,57.3,$14.96B,Consumer Discretionary,Automobile Components,Automotive Parts & Equipment,NYSE
+MHK,Mohawk Industries Inc.,Common Stock,100.98,$5.97B,Consumer Discretionary,Household Durables,Home Furnishings,NYSE
+NKE,NIKE Inc,Common Stock,43.13,$63.22B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods",Footwear,NYSE
+NVR,NVR Inc.,Common Stock,6755.5,$18.04B,Consumer Discretionary,Household Durables,Homebuilding,NYSE
+ORLY,O'Reilly Automotive Inc,Common Stock,93.06,$76.44B,Consumer Discretionary,Specialty Retail,Automotive Retail,NASDAQ
+BKNG,Booking Holdings Inc,Common Stock,181,$137.31B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NASDAQ
+FLUT,Flutter Entertainment PLC,Common Stock,109.51,$18.12B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NYSE
+PHM,PulteGroup Inc,Common Stock,120.44,$22.05B,Consumer Discretionary,Household Durables,Homebuilding,NYSE
+POOL,Pool Corp,Common Stock,209.45,$7.39B,Consumer Discretionary,Distributors,Distributors,NASDAQ
+PSO,Pearson PLC,Depository Receipt,13.45,$8.22B,Consumer Discretionary,Diversified Consumer Services,Education Services,NYSE
+RCL,Royal Caribbean Group,Common Stock,279.26,$72.42B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NYSE
+RL,Ralph Lauren Corp,Common Stock,375.4,$21.16B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods","Apparel, Accessories & Luxury Goods",NYSE
+ROST,Ross Stores Inc,Common Stock,224.47,$69.74B,Consumer Discretionary,Specialty Retail,Apparel Retail,NASDAQ
+SBUX,Starbucks Corp,Common Stock,97.21,$108.47B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NASDAQ
+SCI,Service Corp International,Common Stock,83.46,$11.51B,Consumer Discretionary,Diversified Consumer Services,Specialized Consumer Services,NYSE
+SONY,Sony Group Corporation,Depository Receipt,21.38,$123.28B,Consumer Discretionary,Household Durables,Consumer Electronics,NYSE
+TJX,TJX Companies Inc (The),Common Stock,161.64,$174.41B,Consumer Discretionary,Specialty Retail,Apparel Retail,NYSE
+TM,Toyota Motor Corp,Depository Receipt,215,$265.44B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NYSE
+TOL,Toll Brothers Inc.,Common Stock,139.16,$12.60B,Consumer Discretionary,Household Durables,Homebuilding,NYSE
+SGI,Somnigroup International Inc,Common Stock,77.37,$15.15B,Consumer Discretionary,Household Durables,Home Furnishings,NYSE
+TSCO,Tractor Supply Co,Common Stock,45.28,$22.95B,Consumer Discretionary,Specialty Retail,Other Specialty Retail,NASDAQ
+TXRH,Texas Roadhouse Inc,Common Stock,166.78,$10.54B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NASDAQ
+PAG,Penske Automotive Group Inc,Common Stock,153.26,$9.74B,Consumer Discretionary,Specialty Retail,Automotive Retail,NYSE
+UGP,Ultrapar Participacoes SA,Depository Receipt,5.62,$6.11B,Consumer Discretionary,Specialty Retail,Automotive Retail,NYSE
+URBN,Urban Outfitters Inc,Common Stock,68.22,$5.54B,Consumer Discretionary,Specialty Retail,Apparel Retail,NASDAQ
+VFC,V.F. Corp,Common Stock,17.88,$6.63B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods","Apparel, Accessories & Luxury Goods",NYSE
+WSM,Williams-Sonoma Inc,Common Stock,187.53,$21.41B,Consumer Discretionary,Specialty Retail,Homefurnishing Retail,NYSE
+WYNN,Wynn Resorts Ltd,Common Stock,105.24,$10.45B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NASDAQ
+YUM,YUM Brands Inc,Common Stock,160.43,$43.34B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+MGM,MGM Resorts International,Common Stock,37.1,$9.69B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NYSE
+IHG,Intercontinental Hotels Group PLC,Depository Receipt,141.23,$19.84B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NYSE
+EXPE,Expedia Group Inc,Common Stock,236.9,$27.48B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NASDAQ
+CMG,Chipotle Mexican Grill Inc,Common Stock,33.79,$43.06B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+EDU,New Oriental Education & Technology Group Inc,Depository Receipt,57.34,$9.63B,Consumer Discretionary,Diversified Consumer Services,Education Services,NYSE
+LULU,Lululemon Athletica Inc,Common Stock,158.86,$17.76B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods","Apparel, Accessories & Luxury Goods",NASDAQ
+MELI,MercadoLibre Inc,Common Stock,1775.74,$88.33B,Consumer Discretionary,Broadline Retail,Broadline Retail,NASDAQ
+ULTA,Ulta Beauty Inc,Common Stock,532.82,$23.28B,Consumer Discretionary,Specialty Retail,Other Specialty Retail,NASDAQ
+H,Hyatt Hotels Corp,Common Stock,151.68,$13.64B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NYSE
+LEA,Lear Corp,Common Stock,124.75,$5.97B,Consumer Discretionary,Automobile Components,Automotive Parts & Equipment,NYSE
+HTHT,H World Group Limited,Depository Receipt,53.74,$15.92B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NASDAQ
+TSLA,Tesla Inc,Common Stock,343.25,$1.30T,Consumer Discretionary,Automobiles,Automobile Manufacturers,NASDAQ
+TAL,TAL Education Group,Depository Receipt,11.46,$6.80B,Consumer Discretionary,Diversified Consumer Services,Education Services,NYSE
+GM,General Motors Co,Common Stock,76.74,$65.77B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NYSE
+APTV,Aptiv PLC,Common Stock,60.73,$12.41B,Consumer Discretionary,Automobile Components,Automotive Parts & Equipment,NYSE
+CZR,Caesars Entertainment Inc,Common Stock,26.85,$5.41B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NASDAQ
+VIPS,Vipshop Holdings Limited,Depository Receipt,15.44,$7.18B,Consumer Discretionary,Broadline Retail,Broadline Retail,NYSE
+FIVE,Five Below Inc,Common Stock,228.18,$12.51B,Consumer Discretionary,Specialty Retail,Other Specialty Retail,NASDAQ
+NCLH,Norwegian Cruise Line Holdings Ltd,Common Stock,20.16,$8.53B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NYSE
+TMHC,Taylor Morrison Home Corporation,Common Stock,59.01,$5.39B,Consumer Discretionary,Household Durables,Homebuilding,NYSE
+DOO,BRP Inc,Common Stock,74.575,$5.32B,Consumer Discretionary,Leisure Products,Leisure Products,NASDAQ
+MUSA,Murphy USA Inc,Common Stock,499.06,$9.73B,Consumer Discretionary,Specialty Retail,Automotive Retail,NYSE
+BURL,Burlington Stores Inc,Common Stock,334.46,$20.59B,Consumer Discretionary,Specialty Retail,Apparel Retail,NYSE
+HLT,Hilton Worldwide Holdings Inc,Common Stock,317.2,$69.13B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NYSE
+ARMK,Aramark,Common Stock,43.31,$11.04B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+IBP,Installed Building Products Inc,Common Stock,281.85,$7.07B,Consumer Discretionary,Household Durables,Homebuilding,NYSE
+JD,JD.com Inc,Depository Receipt,29.05,$45.36B,Consumer Discretionary,Broadline Retail,Broadline Retail,NASDAQ
+LEVI,Levi Strauss & Co,Common Stock,21.81,$7.58B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods","Apparel, Accessories & Luxury Goods",NYSE
+BABA,Alibaba Group Holding Ltd,Depository Receipt,125.32,$285.82B,Consumer Discretionary,Broadline Retail,Broadline Retail,NYSE
+W,Wayfair Inc,Common Stock,74.18,$9.12B,Consumer Discretionary,Specialty Retail,Homefurnishing Retail,NYSE
+QSR,Restaurant Brands International Inc,Common Stock,77.56,$26.51B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+ETSY,Etsy Inc,Common Stock,53.99,$5.19B,Consumer Discretionary,Broadline Retail,Broadline Retail,NYSE
+BLD,TopBuild Corp,Common Stock,381.62,$9.87B,Consumer Discretionary,Household Durables,Homebuilding,NYSE
+OLLI,Ollie's Bargain Outlet Holdings Inc,Common Stock,97.31,$5.86B,Consumer Discretionary,Broadline Retail,Broadline Retail,NASDAQ
+PLNT,Planet Fitness Inc,Common Stock,73.97,$5.89B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Leisure Facilities,NYSE
+RACE,Ferrari NV,Common Stock,351.3,$59.07B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NYSE
+RRR,Red Rock Resorts Inc,Common Stock,57.07,$5.85B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NASDAQ
+YUMC,Yum China Holdings Inc,Common Stock,49.83,$16.95B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+GOLF,Acushnet Holdings Corp,Common Stock,98.47,$5.52B,Consumer Discretionary,Leisure Products,Leisure Products,NYSE
+FND,Floor & Decor Holdings Inc,Common Stock,51.13,$5.15B,Consumer Discretionary,Specialty Retail,Home Improvement Retail,NYSE
+CVNA,Carvana Co,Common Stock,338.81,$70.16B,Consumer Discretionary,Specialty Retail,Automotive Retail,NYSE
+SE,Sea Limited,Depository Receipt,85.31,$44.46B,Consumer Discretionary,Broadline Retail,Broadline Retail,NYSE
+ADT,ADT Inc,Common Stock,6.84,$5.41B,Consumer Discretionary,Diversified Consumer Services,Specialized Consumer Services,NYSE
+WH,Wyndham Hotels & Resorts Inc,Common Stock,83.09,$6.09B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NYSE
+PDD,PDD Holdings Inc,Depository Receipt,103.75,$141.31B,Consumer Discretionary,Broadline Retail,Broadline Retail,NASDAQ
+NIO,NIO Inc,Depository Receipt,6.38,$15.02B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NYSE
+CHWY,Chewy Inc,Common Stock,26.46,$10.93B,Consumer Discretionary,Specialty Retail,Other Specialty Retail,NYSE
+DKNG,DraftKings Inc,Common Stock,23.94,$11.38B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NASDAQ
+RSI,Rush Street Interactive Inc,Common Stock,22.21,$5.13B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NYSE
+LI,Li Auto Inc,Depository Receipt,18.63,$19.89B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NASDAQ
+XPEV,XPeng Inc,Depository Receipt,17.8,$16.48B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NYSE
+SGHC,Super Group (SGHC) Ltd,Common Stock,10.93,$5.22B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Casinos & Gaming,NYSE
+ABNB,Airbnb Inc,Common Stock,131.4,$76.07B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NASDAQ
+DASH,DoorDash Inc,Common Stock,160.69,$67.73B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NASDAQ
+CPNG,Coupang Inc,Common Stock,19.68,$35.08B,Consumer Discretionary,Broadline Retail,Broadline Retail,NYSE
+GLBE,Global-E Online Ltd,Common Stock,30.75,$5.16B,Consumer Discretionary,Broadline Retail,Broadline Retail,NASDAQ
+BROS,Dutch Bros Inc,Common Stock,55.5,$8.74B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+ONON,On Holding AG,Common Stock,33.81,$10.66B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods",Footwear,NYSE
+LTH,Life Time Group Holdings Inc,Common Stock,28.52,$6.25B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Leisure Facilities,NYSE
+RIVN,Rivian Automotive Inc,Common Stock,15.14,$18.23B,Consumer Discretionary,Automobiles,Automobile Manufacturers,NASDAQ
+MBLY,Mobileye Global Inc,Common Stock,7.37,$6.04B,Consumer Discretionary,Automobile Components,Automotive Parts & Equipment,NASDAQ
+CAVA,CAVA Group Inc,Common Stock,86.21,$9.71B,Consumer Discretionary,"Hotels, Restaurants & Leisure",Restaurants,NYSE
+SN,SharkNinja Inc,Common Stock,111.91,$14.71B,Consumer Discretionary,Household Durables,Household Appliances,NYSE
+LLYVK,Liberty Live Holdings Inc,Common Stock,101.13,$6.25B,Consumer Discretionary,Diversified Consumer Services,Specialized Consumer Services,NASDAQ
+BIRK,Birkenstock Holding plc,Common Stock,36.95,$6.38B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods",Footwear,NYSE
+AS,Amer Sports Inc,Common Stock,35.07,$18.99B,Consumer Discretionary,"Textiles, Apparel & Luxury Goods","Apparel, Accessories & Luxury Goods",NYSE
+VIK,Viking Holdings Ltd,Common Stock,77.89,$31.86B,Consumer Discretionary,"Hotels, Restaurants & Leisure","Hotels, Resorts & Cruise Lines",NYSE

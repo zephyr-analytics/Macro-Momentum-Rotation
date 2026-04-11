@@ -1,0 +1,60 @@
+Symbol,Company Name,Security Type,Security Price,Market Capitalization,Sector,Industry,Sub-Industry,Exchange
+AEE,Ameren Corporation,Common Stock,112.86,$30.80B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+AEP,American Electric Power Co Inc,Common Stock,134.71,$72.25B,Utilities,Electric Utilities,Electric Utilities,NASDAQ
+AES,AES Corp (The),Common Stock,14.4,$10.29B,Utilities,Independent Power & Renewable Electricity Producers,Independent Power Producers & Energy Traders,NYSE
+ATO,Atmos Energy Corp,Common Stock,189.66,$31.22B,Utilities,Gas Utilities,Gas Utilities,NYSE
+BKH,Black Hills Corp,Common Stock,73.82,$5.55B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+AXIA,AXIA Energia SA,Depository Receipt,12.13,$22.70B,Utilities,Electric Utilities,Electric Utilities,NYSE
+CMS,CMS Energy Corp,Common Stock,78.82,$24.21B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+CNP,CenterPoint Energy Inc.,Common Stock,43.68,$28.52B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+D,Dominion Energy Inc,Common Stock,63.2,$55.10B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+DTE,DTE Energy Co,Common Stock,148.78,$30.84B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+DUK,Duke Energy Corp,Common Stock,131.6,$102.57B,Utilities,Electric Utilities,Electric Utilities,NYSE
+ED,Consolidated Edison Inc.,Common Stock,113.57,$41.35B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+EIX,Edison International,Common Stock,74.35,$27.95B,Utilities,Electric Utilities,Electric Utilities,NYSE
+EMA,Emera Inc,Common Stock,52.86,$16.04B,Utilities,Electric Utilities,Electric Utilities,NYSE
+ETR,Entergy corporation,Common Stock,114.61,$52.13B,Utilities,Electric Utilities,Electric Utilities,NYSE
+EXC,Exelon Corp,Common Stock,49.17,$50.19B,Utilities,Electric Utilities,Electric Utilities,NASDAQ
+FE,FirstEnergy Corp.,Common Stock,51.4,$29.50B,Utilities,Electric Utilities,Electric Utilities,NYSE
+NEE,NextEra Energy Inc,Common Stock,94.17,$195.33B,Utilities,Electric Utilities,Electric Utilities,NYSE
+FTS,Fortis Inc,Common Stock,57.34,$29.14B,Utilities,Electric Utilities,Electric Utilities,NYSE
+BEP,Brookfield Renewable Partners LP,Unit Trust Fund,34.26,$10.04B,Utilities,Independent Power & Renewable Electricity Producers,Renewable Electricity,NYSE
+IDA,IDACORP Inc.,Common Stock,146.31,$8.03B,Utilities,Electric Utilities,Electric Utilities,NYSE
+KEP,Korea Electric Power Corp,Depository Receipt,14.92,$17.44B,Utilities,Electric Utilities,Electric Utilities,NYSE
+SR,Spire Inc,Common Stock,93.9,$5.54B,Utilities,Gas Utilities,Gas Utilities,NYSE
+LNT,Alliant Energy Corporation,Common Stock,72.99,$18.76B,Utilities,Electric Utilities,Electric Utilities,NASDAQ
+NFG,National Fuel Gas Co,Common Stock,95.58,$9.12B,Utilities,Gas Utilities,Gas Utilities,NYSE
+NI,NiSource Inc,Common Stock,48.1,$22.84B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+NJR,New Jersey Resources Corp,Common Stock,57.08,$5.71B,Utilities,Gas Utilities,Gas Utilities,NYSE
+NRG,NRG Energy Inc,Common Stock,160.3,$32.51B,Utilities,Electric Utilities,Electric Utilities,NYSE
+ES,Eversource Energy,Common Stock,69.95,$26.12B,Utilities,Electric Utilities,Electric Utilities,NYSE
+OGE,OGE Energy Corp,Common Stock,49.32,$10.11B,Utilities,Electric Utilities,Electric Utilities,NYSE
+ORA,Ormat Technologies Inc,Common Stock,113.48,$6.83B,Utilities,Independent Power & Renewable Electricity Producers,Renewable Electricity,NYSE
+PCG,PG&E Corp,Common Stock,18.39,$38.73B,Utilities,Electric Utilities,Electric Utilities,NYSE
+PEG,Public Service Enterprise Group Inc,Common Stock,82.7,$40.70B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+TXNM,TXNM Energy Inc,Common Stock,59.17,$6.44B,Utilities,Electric Utilities,Electric Utilities,NYSE
+PNW,Pinnacle West Capital Corp,Common Stock,103.12,$12.38B,Utilities,Electric Utilities,Electric Utilities,NYSE
+PPL,PPL Corp,Common Stock,39.15,$29.23B,Utilities,Electric Utilities,Electric Utilities,NYSE
+SBS,Companhia de Saneamento Basico do Estado de Sao Pa,Depository Receipt,31.71,$21.46B,Utilities,Water Utilities,Water Utilities,NYSE
+SO,Southern Co (The),Common Stock,97.17,$109.15B,Utilities,Electric Utilities,Electric Utilities,NYSE
+SRE,Sempra,Common Stock,98.88,$64.33B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+SWX,Southwest Gas Holdings Inc,Common Stock,90.92,$6.44B,Utilities,Gas Utilities,Gas Utilities,NYSE
+UGI,UGI Corp,Common Stock,37.79,$7.95B,Utilities,Gas Utilities,Gas Utilities,NYSE
+WEC,WEC Energy Group Inc,Common Stock,117.28,$38.09B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+EVRG,Evergy Inc,Common Stock,83.44,$19.08B,Utilities,Electric Utilities,Electric Utilities,NASDAQ
+WTRG,Essential Utilities Inc,Common Stock,40.32,$11.47B,Utilities,Water Utilities,Water Utilities,NYSE
+XEL,Xcel Energy Inc.,Common Stock,81.46,$50.25B,Utilities,Electric Utilities,Electric Utilities,NASDAQ
+NGG,National Grid plc,Depository Receipt,89.96,$87.05B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+POR,Portland General Electric Co,Common Stock,53.73,$6.20B,Utilities,Electric Utilities,Electric Utilities,NYSE
+BIP,Brookfield Infrastructure Partners LP,Unit Trust Fund,36.71,$16.43B,Utilities,Multi-Utilities,Multi-Utilities,NYSE
+AWK,American Water Works Company Inc,Common Stock,136.36,$26.44B,Utilities,Water Utilities,Water Utilities,NYSE
+OGS,ONE Gas Inc,Common Stock,89.83,$5.61B,Utilities,Gas Utilities,Gas Utilities,NYSE
+CWEN,Clearway Energy Inc,Common Stock,40.57,$5.07B,Utilities,Independent Power & Renewable Electricity Producers,Renewable Electricity,NYSE
+VST,Vistra Corp,Common Stock,155.89,$52.03B,Utilities,Independent Power & Renewable Electricity Producers,Independent Power Producers & Energy Traders,NYSE
+ENLT,Enlight Renewable Energy Ltd,Common Stock,71.04,$9.53B,Utilities,Independent Power & Renewable Electricity Producers,Renewable Electricity,NASDAQ
+BIPC,Brookfield Infrastructure Corp,Common Stock,41.73,$5.50B,Utilities,Gas Utilities,Gas Utilities,NYSE
+BEPC,Brookfield Renewable Corp,Common Stock,42.9,$7.34B,Utilities,Independent Power & Renewable Electricity Producers,Renewable Electricity,NYSE
+OKLO,Oklo Inc,Common Stock,50.21,$8.09B,Utilities,Electric Utilities,Electric Utilities,NYSE
+CEG,Constellation Energy Corp,Common Stock,284.27,$98.75B,Utilities,Electric Utilities,Electric Utilities,NASDAQ
+TLN,Talen Energy Corp,Common Stock,328.65,$14.98B,Utilities,Independent Power & Renewable Electricity Producers,Independent Power Producers & Energy Traders,NASDAQ
+ELPC,Companhia Paranaense De Energia - Copel,Depository Receipt,12.79,$9.12B,Utilities,Electric Utilities,Electric Utilities,NYSE

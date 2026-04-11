@@ -1,0 +1,85 @@
+Symbol,Company Name,Security Type,Security Price,Market Capitalization,Sector,Industry,Sub-Industry,Exchange
+IMO,Imperial Oil Ltd,Common Stock,129.75,$64.01B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,AMEX
+UEC,Uranium Energy Corp,Common Stock,13.96,$6.43B,Energy,"Oil, Gas & Consumable Fuels",Coal & Consumable Fuels,AMEX
+APA,APA Corporation,Common Stock,38.75,$15.18B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NASDAQ
+BKR,Baker Hughes a GE Co,Common Stock,63.16,$60.75B,Energy,Energy Equipment & Services,Oil & Gas Equipment & Services,NASDAQ
+GLNG,Golar LNG Ltd,Common Stock,54.87,$5.53B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NASDAQ
+PAA,Plains All American Pipeline LP,Unit Trust Fund,21.71,$15.70B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NASDAQ
+WFRD,Weatherford International plc,Common Stock,102.2,$6.91B,Energy,Energy Equipment & Services,Oil & Gas Equipment & Services,NASDAQ
+FANG,Diamondback Energy Inc,Common Stock,186.47,$54.99B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NASDAQ
+VNOM,Viper Energy Inc,Common Stock,45.62,$16.79B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NASDAQ
+CHRD,Chord Energy Corp,Common Stock,134.93,$8.24B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NASDAQ
+EXE,Expand Energy Corporation,Common Stock,100.19,$24.50B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NASDAQ
+BP,BP plc,Depository Receipt,45.89,$123.62B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+CCJ,Cameco Corp,Common Stock,115.9,$48.01B,Energy,"Oil, Gas & Consumable Fuels",Coal & Consumable Fuels,NYSE
+CNQ,Canadian Natural Resources Ltd,Common Stock,46.43,$102.55B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+CNX,CNX Resources Corp,Common Stock,38.58,$5.64B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+CTRA,Coterra Energy Inc,Common Stock,33.46,$26.51B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+COP,Conocophillips,Common Stock,125.22,$160.61B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+CRK,Comstock Resources Inc,Common Stock,18.55,$5.68B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+CVX,Chevron Corp,Common Stock,192.89,$402.15B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+DVN,Devon Energy Corp,Common Stock,47.91,$31.04B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+E,Eni SpA,Depository Receipt,55.31,$84.63B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+OVV,Ovintiv Inc,Common Stock,56.78,$17.21B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+ENB,Enbridge Inc,Common Stock,54.48,$118.67B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+EOG,EOG Resources Inc.,Common Stock,139.05,$77.27B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+EPD,Enterprise Products Partners LP,Unit Trust Fund,38.03,$83.03B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+EQT,EQT Corp,Common Stock,60.18,$37.89B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+FRO,Frontline plc,Common Stock,36.15,$7.79B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+FTI,TechnipFMC plc,Common Stock,71.82,$29.28B,Energy,Energy Equipment & Services,Oil & Gas Equipment & Services,NYSE
+HAL,Halliburton Co,Common Stock,37.8,$32.34B,Energy,Energy Equipment & Services,Oil & Gas Equipment & Services,NYSE
+LNG,Cheniere Energy Inc,Common Stock,275.21,$59.75B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+MUR,Murphy Oil Corp,Common Stock,39.1,$6.13B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+NOV,NOV Inc,Common Stock,19.14,$7.05B,Energy,Energy Equipment & Services,Oil & Gas Equipment & Services,NYSE
+OKE,ONEOK Inc,Common Stock,86.77,$57.10B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+OXY,Occidental Petroleum Corp,Common Stock,59.77,$62.42B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+PBR,Petroleo Brasileiro S.A.- Petrobras,Depository Receipt,19.98,$77.06B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+PBR-A,Petroleo Brasileiro S.A.- Petrobras,Depository Receipt,18.23,$51.28B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+RIG,Transocean Ltd,Common Stock,6.7,$7.39B,Energy,Energy Equipment & Services,Oil & Gas Drilling,NYSE
+RRC,Range Resources Corp.,Common Stock,43.33,$10.42B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+SLB,SLB Ltd,Common Stock,51.88,$75.58B,Energy,Energy Equipment & Services,Oil & Gas Equipment & Services,NYSE
+SM,SM Energy Co,Common Stock,28.81,$7.47B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+EQNR,Equinor ASA,Depository Receipt,39.33,$105.19B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+SU,Suncor Energy Inc.,Common Stock,64.54,$79.27B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+TTE,TotalEnergies SE,Common Stock,89.45,$199.95B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+TPL,Texas Pacific Land Corp,Common Stock,448.28,$31.01B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+TRP,TC Energy Corp,Common Stock,63.9,$66.09B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+TS,Tenaris SA,Depository Receipt,58.64,$29.65B,Energy,Energy Equipment & Services,Oil & Gas Equipment & Services,NYSE
+VLO,Valero Energy Corp,Common Stock,239.64,$75.18B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Refining & Marketing,NYSE
+WMB,Williams Cos Inc. (The),Common Stock,73.01,$90.54B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+WDS,Woodside Energy Group Ltd,Depository Receipt,23.63,$46.92B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+XOM,Exxon Mobil Corp,Common Stock,156.22,$682.97B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+YPF,Ypf Sociedad Anonima Yacimientos Petroliferos Fisc,Depository Receipt,43.48,$17.37B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+DINO,HF Sinclair Corp,Common Stock,58.18,$10.96B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Refining & Marketing,NYSE
+ET,Energy Transfer LP,Unit Trust Fund,19.08,$65.78B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+AROC,Archrock Inc,Common Stock,35.7,$6.15B,Energy,Energy Equipment & Services,Oil & Gas Equipment & Services,NYSE
+EC,Ecopetrol SA,Depository Receipt,14.11,$30.24B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+CQP,Cheniere Energy Partners LP,Unit Trust Fund,65.17,$31.92B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+CVE,Cenovus Energy Inc,Common Stock,25.98,$51.09B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+PBA,Pembina Pipeline Corp,Common Stock,44.69,$25.94B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+TRGP,Targa Resources Corp,Common Stock,244,$53.91B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+KMI,Kinder Morgan Inc.,Common Stock,32.96,$74.09B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+MPC,Marathon Petroleum Corp,Common Stock,231.98,$72.28B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Refining & Marketing,NYSE
+MTDR,Matador Resources Co,Common Stock,60.34,$8.01B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+PSX,Phillips 66,Common Stock,168,$70.05B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Refining & Marketing,NYSE
+SUN,Sunoco LP,Unit Trust Fund,65.37,$13.58B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Refining & Marketing,NYSE
+MPLX,MPLX LP,Unit Trust Fund,55.89,$56.08B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+WES,Western Midstream Partners LP,Unit Trust Fund,41.42,$16.25B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+PBF,PBF Energy Inc,Common Stock,43.03,$5.42B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Refining & Marketing,NYSE
+NXE,NexGen Energy Ltd,Common Stock,11.55,$6.91B,Energy,"Oil, Gas & Consumable Fuels",Coal & Consumable Fuels,NYSE
+AR,Antero Resources Corporation,Common Stock,39.17,$12.54B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+HESM,Hess Midstream LP,Common Stock,39.58,$8.13B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+PR,Permian Resources Corp,Common Stock,20.56,$18.02B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+KNTK,Kinetik Holdings Inc,Common Stock,45.6,$7.65B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+AM,Antero Midstream Corp,Common Stock,22.47,$10.79B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+MGY,Magnolia Oil & Gas Corp,Common Stock,29.86,$5.93B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+CNR,Core Natural Resources Inc,Common Stock,94.61,$5.07B,Energy,"Oil, Gas & Consumable Fuels",Coal & Consumable Fuels,NYSE
+VIST,Vista Energy SAB de CV,Depository Receipt,65.6,$7.31B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+CRC,California Resources Corp,Common Stock,66.41,$6.08B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
+VAL,Valaris Ltd,Common Stock,99.97,$6.90B,Energy,Energy Equipment & Services,Oil & Gas Drilling,NYSE
+NE,Noble Corporation Plc,Common Stock,50.32,$8.09B,Energy,Energy Equipment & Services,Oil & Gas Drilling,NYSE
+DTM,DT Midstream Inc,Common Stock,134.39,$13.68B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+SHEL,Shell Plc,Depository Receipt,92.01,$265.22B,Energy,"Oil, Gas & Consumable Fuels",Integrated Oil & Gas,NYSE
+KGS,Kodiak Gas Services Inc,Common Stock,60.23,$5.24B,Energy,Energy Equipment & Services,Oil & Gas Equipment & Services,NYSE
+SOBO,South Bow Corp,Common Stock,33.49,$7.05B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Storage & Transportation,NYSE
+VG,Venture Global Inc,Common Stock,14.44,$39.29B,Energy,"Oil, Gas & Consumable Fuels",Oil & Gas Exploration & Production,NYSE
