@@ -31,7 +31,7 @@ ETF_UNIVERSE = [
     "VEA", "VWO", "EEMS", "SCZ", "EFV", "EFG", "IQLT", "IMTM", "IGRO",
     "IXN", "GXI", "IXC", "IXJ", "EXI", "KXI", "RXI", "JXI", "MXI",
     "VGSH", "VGIT", "BND", "BNDX",
-    "GLD", "DBC",
+    "GLD", "PDBC",
     "VNQ", "VNQI",
     "BIL",
 ]
@@ -56,7 +56,7 @@ SECTOR_MAP = {
     "IXN":"Sector","GXI":"Sector","IXC":"Sector","IXJ":"Sector","EXI":"Sector",
     "KXI":"Sector","RXI":"Sector","JXI":"Sector","MXI":"Sector",
     "VGSH":"Fixed Income","VGIT":"Fixed Income","BND":"Fixed Income","BNDX":"Fixed Income",
-    "GLD":"Commodities","DBC":"Commodities",
+    "GLD":"Commodities","PDBC":"Commodities",
     "VNQ":"Real Estate","VNQI":"Real Estate",
     "BIL":"Cash",
 }
@@ -108,23 +108,53 @@ def band_index(price, bands):
     return len(bands) - 2
 
 
-def compute_signals(prices: pd.DataFrame) -> dict:
+def compute_signals(prices: pd.DataFrame, regime_state: dict | None = None) -> dict:
     """
     Run the full algorithm logic on historical price data.
-    Returns a dict of signal outputs for the dashboard.
+
+    Parameters
+    ----------
+    prices : pd.DataFrame
+        Historical close prices, one column per ticker.
+    regime_state : dict | None
+        Persisted state from the previous run:
+          {
+            "was_risk_off":    bool,
+            "max_stress":      float,
+            "band_hist_high":  {ticker: int},   # per-ticker historical-high band index
+                                                 # reset to 0 on recovery, exactly as QC does
+          }
+        None → treat as first run (no prior state).
+
+    Returns
+    -------
+    dict with keys:
+        ticker_data, weights, bottom_frac, risk_off, as_of,
+        new_regime_state   ← caller must persist this for the next run
     """
-    results = {}
-    tickers = [t for t in ETF_UNIVERSE if t in prices.columns]
+    # ── Unpack or initialise regime state ──────────────────────────────────
+    if regime_state is None:
+        regime_state = {}
+
+    was_risk_off   = regime_state.get("was_risk_off", False)
+    max_stress     = regime_state.get("max_stress", 0.0)
+    # band_hist_high: maps ticker → highest band index seen since last reset
+    # A value of None means "never observed" — will be filled from rolling history
+    # on this run and then accumulated going forward.
+    band_hist_high = dict(regime_state.get("band_hist_high", {}))
+
+    results  = {}
+    tickers  = [t for t in ETF_UNIVERSE if t in prices.columns]
     non_cash = [t for t in tickers if t != CASH_ETF]
 
-    # ── Per-ticker metrics ──
+    # ── Per-ticker metrics ─────────────────────────────────────────────────
     ticker_data = {}
     for t in tickers:
         px = prices[t].dropna()
         if len(px) < BAND_LEN + 10:
             continue
 
-        closes = px.values
+        closes  = px.values
         sma     = pd.Series(closes).rolling(BAND_LEN).mean().values
         std_arr = pd.Series(closes).rolling(BAND_LEN).std().values
 
@@ -138,30 +168,45 @@ def compute_signals(prices: pd.DataFrame) -> dict:
         # Stretch (current Z-score from SMA)
         stretch = abs(close - mid) / dev
 
-        # SMA-smoothed stretch (simple average over band_len of daily |z|)
+        # SMA-smoothed stretch — mean of |z| over last BAND_LEN bars
         z_series = np.abs((closes - sma) / np.where(std_arr > 0, std_arr, np.nan))
         lm = float(np.nanmean(z_series[-BAND_LEN:]))
 
-        # Band indices over hist_len
-        bands_now  = build_bands_adaptive(mid, dev, lm if lm > 0 else 1.0)
-        idx        = band_index(close, bands_now)
+        # ── Breadth band index: fixed bands, multiplier=1.0  (mirrors OnData) ──
+        fixed_bands = build_bands(mid, dev, m=1.0)
+        breadth_idx = band_index(close, fixed_bands)
 
-        hist_indices = []
-        for i in range(max(0, len(closes)-HIST_LEN), len(closes)):
-            m2  = sma[i];  d2 = std_arr[i]
+        # ── Sizing band index: adaptive bands  (mirrors Rebalance) ──
+        lm_safe    = lm if lm > 0 else 1.0
+        adap_bands = build_bands_adaptive(mid, dev, lm_safe)
+        sizing_idx = band_index(close, adap_bands)
+
+        # ── Rolling hist-high over last HIST_LEN bars (adaptive bands) ──
+        rolling_hist_indices = []
+        for i in range(max(0, len(closes) - HIST_LEN), len(closes)):
+            m2 = sma[i]; d2 = std_arr[i]
             if np.isnan(m2) or np.isnan(d2) or d2 == 0:
                 continue
-            z2  = np.nanmean(z_series[max(0,i-BAND_LEN):i]) or 1.0
-            b2  = build_bands_adaptive(m2, d2, z2)
-            hist_indices.append(band_index(closes[i], b2))
+            z2 = float(np.nanmean(z_series[max(0, i - BAND_LEN):i])) or 1.0
+            b2 = build_bands_adaptive(m2, d2, z2)
+            rolling_hist_indices.append(band_index(closes[i], b2))
 
-        hist_high = max(hist_indices) if hist_indices else idx
+        rolling_high = max(rolling_hist_indices) if rolling_hist_indices else sizing_idx
+
+        # ── Accumulate the persisted historical high ──
+        # The QC algorithm accumulates band_hist indefinitely (until a recovery
+        # reset clears it).  We mimic this by taking the max of:
+        #   (a) whatever was stored from previous runs
+        #   (b) the rolling high computed from the data we have now
+        prev_high     = band_hist_high.get(t, 0)
+        hist_high     = max(prev_high, rolling_high)
+        band_hist_high[t] = hist_high          # will be saved back into regime state
 
         # Momentum
         mom = np.nan
         if len(px) >= max(LOOKBACKS) + 1:
             mom = float(np.mean([
-                closes[-1] / closes[-lb-1] - 1
+                closes[-1] / closes[-lb - 1] - 1
                 for lb in LOOKBACKS
                 if len(closes) > lb
             ]))
@@ -169,23 +214,23 @@ def compute_signals(prices: pd.DataFrame) -> dict:
         # Uptrend filter
         uptrend = close > mid
 
-        # Band ceiling scale
+        # Band ceiling scale (uses sizing_idx vs accumulated hist_high)
         if hist_high <= 0:
             scale = 1.0
-        elif idx >= hist_high:
+        elif sizing_idx >= hist_high:
             scale = 0.0
         else:
-            scale = max(0.2, 1.0 - idx / hist_high)
+            scale = max(0.2, 1.0 - sizing_idx / hist_high)
 
         # Anticipatory exhaustion
         peak_stretch = float(np.nanmax(z_series[-252:])) if len(z_series) >= 10 else stretch
         exhausted    = False
-        if idx >= 10 and peak_stretch > 0 and stretch < (peak_stretch * 0.80):
+        if sizing_idx >= 10 and peak_stretch > 0 and stretch < (peak_stretch * 0.80):
             scale     = 0.2
             exhausted = True
 
         # 52-week % from high/low
-        w52 = closes[-min(252, len(closes)):]
+        w52           = closes[-min(252, len(closes)):]
         pct_from_high = (close - w52.max()) / w52.max() * 100
         pct_from_low  = (close - w52.min()) / w52.min() * 100
 
@@ -196,7 +241,8 @@ def compute_signals(prices: pd.DataFrame) -> dict:
             "dev":           round(dev, 4),
             "stretch":       round(stretch, 3),
             "lm":            round(lm, 3),
-            "band_idx":      idx,
+            "band_idx":      sizing_idx,        # adaptive — used for sizing & display
+            "breadth_idx":   breadth_idx,       # fixed — used for regime breadth check
             "hist_high":     hist_high,
             "scale":         round(scale, 3),
             "momentum":      round(mom * 100, 2) if not np.isnan(mom) else None,
@@ -209,14 +255,55 @@ def compute_signals(prices: pd.DataFrame) -> dict:
 
     results["ticker_data"] = ticker_data
 
-    # ── Regime / breadth ──
-    idxs         = [ticker_data[t]["band_idx"] for t in non_cash if t in ticker_data]
-    bottom_frac  = sum(i in BOTTOM_LEVELS for i in idxs) / len(idxs) if idxs else 0
-    risk_off     = bottom_frac >= RISK_OFF_THRESHOLD
+    # ── Regime / breadth  (uses breadth_idx — fixed bands, mirrors OnData) ──
+    breadth_idxs = [ticker_data[t]["breadth_idx"] for t in non_cash if t in ticker_data]
+    bottom_frac  = (
+        sum(i in BOTTOM_LEVELS for i in breadth_idxs) / len(breadth_idxs)
+        if breadth_idxs else 0.0
+    )
+
+    max_stress = max(max_stress, bottom_frac)
+
+    # ── Hysteresis / recovery gate  (mirrors QC Rebalance exactly) ──
+    allow_universe = True
+
+    if bottom_frac >= RISK_OFF_THRESHOLD:
+        allow_universe = False
+        was_risk_off   = True
+
+    elif was_risk_off:
+        denominator  = max(max_stress, 0.10)
+        improvement  = (max_stress - bottom_frac) / denominator
+
+        if improvement >= RECOVERY_IMPROVEMENT or bottom_frac < RECOVERY_FLOOR:
+            # ── Recovery: reset band_hist_high for all tickers ──
+            band_hist_high = {t: 0 for t in band_hist_high}
+            allow_universe = True
+            was_risk_off   = False
+            max_stress     = 0.0
+        else:
+            # Still in recovery wait — stay risk-off
+            allow_universe = False
+
+    risk_off = not allow_universe
     results["bottom_frac"] = bottom_frac
     results["risk_off"]    = risk_off
+    results["allow_universe"] = allow_universe
 
-    # ── Top picks ──
+    # ── Persist updated regime state ───────────────────────────────────────
+    results["new_regime_state"] = {
+        "was_risk_off":   was_risk_off,
+        "max_stress":     max_stress,
+        "band_hist_high": band_hist_high,
+    }
+
+    # ── Top picks (only when risk-on) ──────────────────────────────────────
+    if not allow_universe:
+        final_w = {CASH_ETF: 1.0}
+        results["weights"] = final_w
+        results["as_of"]   = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return results
+
     candidates = {
         t: d for t, d in ticker_data.items()
         if t != CASH_ETF
@@ -234,10 +321,10 @@ def compute_signals(prices: pd.DataFrame) -> dict:
 
     if scaled:
         total = sum(scaled.values())
-        raw_w = {t: v/total for t, v in scaled.items()}
+        raw_w = {t: v / total for t, v in scaled.items()}
         capped = {t: min(MAX_WEIGHT, w) for t, w in raw_w.items()}
-        csum = sum(capped.values())
-        final_w = {t: w/csum for t, w in capped.items()} if csum > 0 else {}
+        csum   = sum(capped.values())
+        final_w = {t: w / csum for t, w in capped.items()} if csum > 0 else {}
     else:
         final_w = {}
 
@@ -257,23 +344,33 @@ def compute_signals(prices: pd.DataFrame) -> dict:
 
 _cache = {"ts": None, "prices": None, "signals": None}
 
-def fetch_and_compute():
+def fetch_and_compute(regime_state=None):
+    """
+    Download prices (cached for 10 min) and run compute_signals.
+
+    regime_state is the persisted hysteresis dict from the previous run.
+    It is passed straight through to compute_signals so that
+    was_risk_off, max_stress, and band_hist_high all accumulate correctly
+    across dashboard refreshes.
+    """
     now = datetime.now()
-    if _cache["ts"] and (now - _cache["ts"]).seconds < 600:
-        return _cache["signals"]
+    # Re-use cached prices if fresh enough, but always recompute signals
+    # with the latest regime_state so hysteresis is applied correctly.
+    if _cache["prices"] is None or not _cache["ts"] or (now - _cache["ts"]).seconds >= 600:
+        end   = now
+        start = end - timedelta(days=520)
+        raw   = yf.download(ETF_UNIVERSE, start=start, end=end,
+                            auto_adjust=True, progress=False, threads=True)
+        if isinstance(raw.columns, pd.MultiIndex):
+            prices = raw["Close"]
+        else:
+            prices = raw[["Close"]].rename(columns={"Close": ETF_UNIVERSE[0]})
 
-    end   = now
-    start = end - timedelta(days=520)
-    raw   = yf.download(ETF_UNIVERSE, start=start, end=end,
-                        auto_adjust=True, progress=False, threads=True)
-    if isinstance(raw.columns, pd.MultiIndex):
-        prices = raw["Close"]
-    else:
-        prices = raw[["Close"]].rename(columns={"Close": ETF_UNIVERSE[0]})
+        prices = prices.ffill().dropna(how="all")
+        _cache.update({"ts": now, "prices": prices})
 
-    prices = prices.ffill().dropna(how="all")
-    sigs   = compute_signals(prices)
-    _cache.update({"ts": now, "prices": prices, "signals": sigs})
+    sigs = compute_signals(_cache["prices"], regime_state)
+    _cache["signals"] = sigs
     return sigs
 
 
@@ -529,7 +626,11 @@ app.layout = html.Div([
 
     # Auto-refresh interval
     dcc.Interval(id="auto-refresh", interval=10 * 60 * 1000, n_intervals=0),
+    # Transient signals (rebuilt each refresh)
     dcc.Store(id="signals-store"),
+    # Persisted regime state — survives page reloads via browser localStorage.
+    # Stores: was_risk_off (bool), max_stress (float), band_hist_high (dict).
+    dcc.Store(id="regime-store", storage_type="local"),
 
 ], style={
     "background": PALETTE["bg"],
@@ -545,19 +646,28 @@ app.layout = html.Div([
 
 @app.callback(
     Output("signals-store", "data"),
+    Output("regime-store", "data"),
     Input("refresh-btn", "n_clicks"),
     Input("auto-refresh", "n_intervals"),
+    dash.dependencies.State("regime-store", "data"),
 )
-def load_signals(n_clicks, n_intervals):
-    sigs = fetch_and_compute()
-    # Serialise — store ticker_data + weights + meta
-    return {
+def load_signals(n_clicks, n_intervals, regime_state):
+    """
+    Loads prices, runs signal engine with persisted regime state,
+    writes updated regime state back to localStorage.
+    """
+    sigs = fetch_and_compute(regime_state or {})
+    signals_out = {
         "ticker_data": sigs["ticker_data"],
         "weights":     {t: round(w, 4) for t, w in sigs["weights"].items()},
         "bottom_frac": sigs["bottom_frac"],
         "risk_off":    sigs["risk_off"],
         "as_of":       sigs["as_of"],
     }
+    # Persist the updated regime state (was_risk_off, max_stress, band_hist_high).
+    # Dash serialises this to browser localStorage automatically.
+    new_regime = sigs.get("new_regime_state", regime_state or {})
+    return signals_out, new_regime
 
 
 @app.callback(
@@ -568,8 +678,9 @@ def load_signals(n_clicks, n_intervals):
     Output("stress-bar-fill", "style"),
     Output("stress-label", "children"),
     Input("signals-store", "data"),
+    dash.dependencies.State("regime-store", "data"),
 )
-def update_kpis(data):
+def update_kpis(data, regime_state):
     if not data:
         return "Loading…", [], "", {}, {}, ""
 
@@ -578,6 +689,9 @@ def update_kpis(data):
     bf    = data["bottom_frac"]
     ro    = data["risk_off"]
     as_of = data["as_of"]
+    rs    = regime_state or {}
+    was_ro     = rs.get("was_risk_off", False)
+    peak_stress = rs.get("max_stress", 0.0)
 
     uptrend_pct = sum(1 for d in td.values() if d["uptrend"] and d["ticker"] != CASH_ETF) / max(len(td)-1, 1)
     top_ticker  = max((t for t in wts if t != CASH_ETF), key=lambda t: wts[t], default=CASH_ETF)
@@ -595,6 +709,10 @@ def update_kpis(data):
         kpi_card("Stress Level", f"{bf*100:.1f}%",
                  f"threshold {RISK_OFF_THRESHOLD*100:.0f}%",
                  bar_color),
+        kpi_card("Peak Stress", f"{peak_stress*100:.1f}%",
+                 "since last reset", PALETTE["red"] if peak_stress >= RISK_OFF_THRESHOLD else PALETTE["muted"]),
+        kpi_card("Recovery Gate", "OPEN" if not was_ro else "LOCKED",
+                 "was_risk_off state", PALETTE["green"] if not was_ro else PALETTE["amber"]),
         kpi_card("Uptrend %", f"{uptrend_pct*100:.0f}%",
                  "vs SMA-168", PALETTE["accent"]),
         kpi_card("Open Positions", str(n_pos),
