@@ -8,10 +8,55 @@ Data flow
 2. "Fetch Closes"  pulls 5y daily Close for every ticker → saved to cache/closes.csv
 3. "Fetch OHLC"    pulls 60d daily OHLC  for every ticker → saved to cache/ohlc.csv
 4. "Run Analysis"  reads both cache files and runs the full algorithm.
+
+QC MATCHING NOTES
+-----------------
+This dashboard is designed to produce ongoing daily signals while matching
+the QC algorithm's logic as closely as possible. Key design decisions:
+
+1.  band_hist (ceiling) update scope: QC only updates band_hist for the
+    `stock_count` (top-N by momentum) symbols that make it into the `top`
+    list each Rebalance — i.e. symbols that are above EMA, have positive
+    momentum, pass the ADX filter, AND rank in the top N by momentum that
+    period. This dashboard reproduces that scope with a proper universe-wide
+    cross-sectional ranking pass (see compute_band_hist_top_n) rather than
+    gating each ticker independently on above-EMA/momentum alone.
+
+    KNOWN DEVIATION: QC's ADX filter can't be applied retroactively across
+    the full 5-year band_hist build, because only a 60-day OHLC cache is
+    fetched (no multi-year daily High/Low history is stored). So the
+    historical band_hist construction matches QC on: above EMA, mom > 0,
+    and top-N-by-momentum ranking — but does NOT apply the ADX <= 35 gate
+    when building historical ceiling history. ADX IS applied correctly at
+    the live/current-bar level in run_portfolio(), since that only needs
+    today's ADX value, which the 60-day cache supports.
+
+2.  ceiling_reset_dates: QC resets band_hist on the month-end rebalance bar
+    where recovery is first detected. We map each recovery detection date
+    forward to the next month-end trading day to match this timing.
+
+3.  band_hist update frequency: kept daily (vs QC monthly) so the dashboard
+    provides ongoing intra-month signals. This is the only intentional
+    frequency deviation from QC — the eligibility/ranking scope itself now
+    matches QC's `for s in top` logic (modulo the ADX caveat above).
+
+4.  stretch_max: never reset (lifetime peak per symbol), matching QC exactly.
+
+5.  Exhaustion: uses stretch_ema (smoothed) as current value vs stretch_max
+    (raw instantaneous peak), matching QC exactly.
+
+6.  Sizing bands: dynamic lm-based multipliers, matching QC Rebalance exactly.
+
+7.  Breadth bands: fixed golden-ratio multipliers, matching QC OnData exactly.
+
+8.  Top-N used for the historical band_hist ranking pass is the SAME top_n
+    value used for live portfolio construction (both trace back to QC's
+    single self.stock_count parameter), so the two stay consistent.
 """
 
 import glob, os, re, time, traceback, warnings
 warnings.filterwarnings("ignore")
+from collections import deque
 
 import dash
 from dash import dcc, html, dash_table, Input, Output, State
@@ -19,7 +64,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import yfinance as yf
-from typing import Optional   # ← Python 3.9-safe instead of X | Y
+from typing import Optional
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 LOOKBACKS     = [21, 63, 126, 189, 252]
@@ -42,7 +87,6 @@ ERROR_LOG       = os.path.join(CACHE_DIR, "errors.log")
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 def log_error(context: str, exc: Exception) -> None:
-    """Write exception + traceback to errors.log and also print to console."""
     msg = f"\n[ERROR] {context}\n{traceback.format_exc()}\n"
     print(msg)
     try:
@@ -72,7 +116,6 @@ BASE_LAYOUT = dict(
 )
 
 def layout(**overrides):
-    """Return BASE_LAYOUT merged with overrides — avoids duplicate keyword errors."""
     return {**BASE_LAYOUT, **overrides}
 
 # ── Market cap parser ──────────────────────────────────────────────────────────
@@ -167,35 +210,21 @@ def load_universe(top_n: int = TOP_PER_FILE):
 
 # ── yfinance MultiIndex helper ─────────────────────────────────────────────────
 def _extract_field(raw: pd.DataFrame, ticker: str, field: str) -> Optional[pd.Series]:
-    """
-    Safely extract a single price field for one ticker from a yfinance
-    multi-ticker download result.
-
-    yfinance ≥ 0.2 returns a MultiIndex with TWO possible orderings:
-      - (Price, Ticker)  e.g. columns = [("Close","AAPL"), ("Close","MSFT"), …]
-      - (Ticker, Price)  e.g. columns = [("AAPL","Close"), ("AAPL","High"), …]
-
-    We try both, then fall back to a flat single-ticker DataFrame.
-    """
     if raw is None or raw.empty:
         return None
 
     cols = raw.columns
 
-    # MultiIndex case
     if isinstance(cols, pd.MultiIndex):
-        # Detect ordering by checking which level contains known price names
         price_fields = {"Open", "High", "Low", "Close", "Volume",
                         "open", "high", "low", "close", "volume"}
         lvl0_is_price = any(str(v) in price_fields for v in cols.get_level_values(0))
 
         if lvl0_is_price:
-            # (Price, Ticker) ordering — standard for recent yfinance
             try:
                 return raw[field][ticker].dropna()
             except KeyError:
                 pass
-            # Try case-insensitive match on ticker
             for t in cols.get_level_values(1).unique():
                 if str(t).upper() == ticker.upper():
                     try:
@@ -203,7 +232,6 @@ def _extract_field(raw: pd.DataFrame, ticker: str, field: str) -> Optional[pd.Se
                     except KeyError:
                         pass
         else:
-            # (Ticker, Price) ordering
             for t in cols.get_level_values(0).unique():
                 if str(t).upper() == ticker.upper():
                     try:
@@ -211,7 +239,6 @@ def _extract_field(raw: pd.DataFrame, ticker: str, field: str) -> Optional[pd.Se
                     except KeyError:
                         pass
 
-    # Flat DataFrame (single ticker downloaded alone)
     if field in raw.columns:
         return raw[field].dropna()
 
@@ -219,7 +246,6 @@ def _extract_field(raw: pd.DataFrame, ticker: str, field: str) -> Optional[pd.Se
 
 
 def _extract_ohlc(raw: pd.DataFrame, ticker: str) -> Optional[pd.DataFrame]:
-    """Return a DataFrame with columns High, Low, Close for one ticker."""
     result = {}
     for f in ("High", "Low", "Close"):
         s = _extract_field(raw, ticker, f)
@@ -235,7 +261,6 @@ def _extract_ohlc(raw: pd.DataFrame, ticker: str) -> Optional[pd.DataFrame]:
 
 # ── yfinance chunked fetch helpers ────────────────────────────────────────────
 def fetch_closes(tickers: list) -> pd.DataFrame:
-    """Pull 5-year daily Close for each ticker in chunks. Saves to CLOSES_CSV."""
     print(f"\nFetching closes for {len(tickers)} tickers "
           f"in chunks of {CHUNK_SIZE} …")
     chunks = [tickers[i:i+CHUNK_SIZE] for i in range(0, len(tickers), CHUNK_SIZE)]
@@ -247,7 +272,7 @@ def fetch_closes(tickers: list) -> pd.DataFrame:
         try:
             raw = yf.download(chunk, period="5y", interval="1d",
                               auto_adjust=True, progress=False,
-                              group_by="ticker")   # explicit group_by
+                              group_by="ticker")
             if raw is None or raw.empty:
                 print("    no data returned")
                 continue
@@ -285,7 +310,6 @@ def fetch_closes(tickers: list) -> pd.DataFrame:
 
 
 def fetch_ohlc(tickers: list) -> pd.DataFrame:
-    """Pull 60-day daily OHLC for each ticker in chunks. Saves to OHLC_CSV."""
     print(f"\nFetching OHLC (60d) for {len(tickers)} tickers "
           f"in chunks of {CHUNK_SIZE} …")
     chunks = [tickers[i:i+CHUNK_SIZE] for i in range(0, len(tickers), CHUNK_SIZE)]
@@ -403,12 +427,12 @@ def compute_adx(hi: np.ndarray, lo: np.ndarray, cl: np.ndarray,
     return float(ema_series(dx, period)[-1])
 
 # Fixed QC-matching breadth band multipliers (from OnData)
-BREADTH_BANDS_MULT = [1.618, 1.382, 1.0, 0.809, 0.5, 0.382]  # symmetric around mid
+BREADTH_BANDS_MULT = [1.618, 1.382, 1.0, 0.809, 0.5, 0.382]
 
 def _breadth_band_index(price: float, mid: float, dev: float) -> int:
     """
-    Compute band index using fixed golden-ratio multipliers.
-    Matches QC OnData exactly — does NOT use dynamic lm.
+    Fixed golden-ratio multipliers — matches QC OnData exactly.
+    Used ONLY for breadth tracking, NOT for per-ticker sizing.
     """
     bands = [
         mid - dev * 1.618,
@@ -428,38 +452,51 @@ def _breadth_band_index(price: float, mid: float, dev: float) -> int:
     return band_index(price, bands)
 
 
+def _month_end_dates(dates: pd.DatetimeIndex) -> set:
+    """
+    Return the set of dates that are the last trading day of their month.
+    Matches QC's DateRules.month_end("SPY") behaviour.
+    """
+    s = pd.Series(dates, index=dates)
+    # Group by year-month, take the last date in each group
+    return set(s.groupby([s.dt.year, s.dt.month]).last())
+
+
 def compute_breadth_history(closes_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Replicate QC OnData breadth tracking bar-by-bar over the full close history.
+    Replicates QC OnData breadth tracking bar-by-bar over the full close history.
 
-    For every trading day, computes the fixed-band index for every ticker,
-    then calculates bottom_frac (fraction of universe in bands 0-4).
-    Also computes the regime state (risk_off, was_risk_off, max_stress_level)
-    matching QC's recovery logic exactly.
+    Uses FIXED golden-ratio band multipliers (matching QC OnData), NOT the
+    dynamic lm-based sizing bands (which are only used in QC Rebalance).
+
+    Recovery reset dates are mapped to the next month-end trading day to
+    match QC's scheduled rebalance timing.
 
     Returns a DataFrame indexed by Date with columns:
-        bottom_frac, regime  ('risk_on' | 'risk_off' | 'recovery')
-        max_stress_level, improvement (for recovery display)
+        bottom_frac, regime ('risk_on' | 'risk_off' | 'recovery')
+        max_stress_level, improvement
+        reset_on_rebalance (bool — True on the month-end bar where ceilings reset)
     """
     closes = closes_df.dropna(axis=1, how="all")
-    tickers = closes.columns.tolist()
-    dates   = closes.index
+    dates  = closes.index
 
     min_bars = BAND_LEN + 10
 
-    # Pre-compute EMA arrays for each ticker (vectorised via pandas ewm)
-    k = 2.0 / (BAND_LEN + 1)
     ema_df = closes.ewm(span=BAND_LEN, adjust=False).mean()
-
-    # Rolling std — use min_periods so early rows are NaN
     std_df = closes.rolling(BAND_LEN, min_periods=BAND_LEN).std()
+
+    month_ends = _month_end_dates(dates)
 
     records = []
 
-    # Regime state (mirrors QC instance variables)
+    # Regime state — mirrors QC instance variables exactly
     was_risk_off     = False
     max_stress_level = 0.0
     risk_off         = False
+
+    # Track pending reset: if recovery is detected on a daily bar, the actual
+    # ceiling reset fires on the next month-end rebalance (matching QC scheduling)
+    pending_reset    = False
 
     for i, date in enumerate(dates):
         if i < min_bars:
@@ -470,7 +507,7 @@ def compute_breadth_history(closes_df: pd.DataFrame) -> pd.DataFrame:
         row_std   = std_df.iloc[i]
 
         band_idxs = []
-        for t in tickers:
+        for t in closes.columns:
             c   = row_close[t]
             mid = row_ema[t]
             dev = row_std[t]
@@ -484,7 +521,9 @@ def compute_breadth_history(closes_df: pd.DataFrame) -> pd.DataFrame:
         bottom_frac = sum(1 for idx in band_idxs if idx in BOTTOM_LEVELS) / len(band_idxs)
         max_stress_level = max(max_stress_level, bottom_frac)
 
-        # ── Regime logic matching QC exactly ──
+        reset_fires_today = False
+
+        # ── Regime logic — matches QC Rebalance exactly ──
         if bottom_frac >= 0.45:
             risk_off     = True
             was_risk_off = True
@@ -496,18 +535,40 @@ def compute_breadth_history(closes_df: pd.DataFrame) -> pd.DataFrame:
             improvement = (max_stress_level - bottom_frac) / denominator
 
             if improvement >= 0.60 or bottom_frac < 0.15:
-                # Recovery — ceilings would reset here in QC
-                was_risk_off     = False
-                risk_off         = False
-                max_stress_level = 0.0
-                regime           = "recovery"
+                # Recovery detected — in QC this fires inside Rebalance (month-end).
+                # We detect it daily but only fire the ceiling reset on the next
+                # month-end bar, matching QC's scheduler.
+                if date in month_ends:
+                    # We're on a month-end bar: reset fires now
+                    was_risk_off     = False
+                    risk_off         = False
+                    max_stress_level = 0.0
+                    regime           = "recovery"
+                    reset_fires_today = True
+                    pending_reset    = False
+                else:
+                    # Recovery condition met on intra-month bar — mark pending,
+                    # keep risk_off state until month-end rebalance
+                    pending_reset = True
+                    regime        = "risk_off"   # still risk-off until rebalance
+                    risk_off      = True
             else:
-                regime   = "risk_off"   # still waiting for full recovery
+                regime   = "risk_off"
                 risk_off = True
         else:
             risk_off    = False
             improvement = 0.0
             regime      = "risk_on"
+
+        # Fire pending reset on next month-end bar
+        if pending_reset and date in month_ends and regime != "recovery":
+            was_risk_off     = False
+            risk_off         = False
+            max_stress_level = 0.0
+            regime           = "recovery"
+            reset_fires_today = True
+            pending_reset    = False
+            improvement      = (max_stress_level - bottom_frac) / max(max_stress_level, 0.10)
 
         records.append(dict(
             date=date,
@@ -515,6 +576,7 @@ def compute_breadth_history(closes_df: pd.DataFrame) -> pd.DataFrame:
             regime=regime,
             max_stress_level=max_stress_level,
             improvement=improvement,
+            reset_on_rebalance=reset_fires_today,
         ))
 
     if not records:
@@ -524,169 +586,269 @@ def compute_breadth_history(closes_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def analyse_ticker(ticker: str,
-                   close_series: pd.Series,
-                   ohlc_df: Optional[pd.DataFrame],
-                   ceiling_reset_dates: Optional[list] = None) -> Optional[dict]:
+# ── Per-ticker time series (Phase A) ──────────────────────────────────────────
+def compute_ticker_series(ticker: str, close_series: pd.Series) -> Optional[dict]:
     """
-    Matches QC Rebalance logic exactly:
-    - stretch_ema  : clean manual EMA of raw stretch values (not price-fed)
-    - peak_stretch : max of raw instantaneous stretch (not EMA peak)
-    - band_hist    : updated on every bar for every ticker (not just top picks)
-    - sizing bands : dynamic lm-based multipliers
-    - breadth bands: NOT used here (handled separately in compute_breadth_history)
+    Computes the full bar-by-bar time series needed for both the
+    universe-wide band_hist ranking pass and the final per-ticker metrics.
 
-    ceiling_reset_dates: list of date indices where band_hist was reset
-                         (from recovery events in breadth history)
+    This matches QC's OnData + the sizing-band portion of Rebalance exactly:
+      - ema (band_len EMA of close)
+      - dev (rolling std over band_len)
+      - stretch = abs(close - mid) / dev            (raw instantaneous)
+      - stretch_ema = EMA of stretch                 (QC: self.stretch_ema[s])
+      - stretch_max = running all-time peak of stretch, never reset
+                                                       (QC: self.stretch_max[s])
+      - sizing-band index using the CURRENT stretch_ema at that bar
+                                                       (QC: bands built each bar
+                                                        in OnData use the live
+                                                        stretch_ema value)
+      - composite momentum over LOOKBACKS
+      - above_ema flag
+
+    Returns None if there isn't enough history.
     """
-    try:
-        closes = close_series.dropna()
-        dates  = closes.index
-        vals   = closes.values.astype(float)
-        n      = len(vals)
+    closes = close_series.dropna()
+    dates  = closes.index
+    vals   = closes.values.astype(float)
+    n      = len(vals)
 
-        if n < max(LOOKBACKS) + BAND_LEN + 10:
-            return None
+    if n < max(LOOKBACKS) + BAND_LEN + 10:
+        return None
 
-        reset_set = set(ceiling_reset_dates or [])
+    ema_arr = ema_series(vals, BAND_LEN)
+    ema_k   = 2.0 / (BAND_LEN + 1)
+    max_lb  = max(LOOKBACKS)
 
-        ema_arr     = ema_series(vals, BAND_LEN)
-        stretch_arr = []          # raw stretch per bar
-        stretch_ema_arr = []      # manual EMA of stretch (matches QC stretch_ema)
-        band_idx_hist   = []      # updated every bar (matches QC OnData + band_hist)
-        peak_stretch    = 0.0     # max of raw stretch (matches QC stretch_max)
+    out_dates, out_idx, out_mom = [], [], []
+    out_above_ema, out_stretch_ema, out_stretch_max = [], [], []
+    out_dev, out_mid, out_close = [], [], []
 
-        ema_k = 2.0 / (BAND_LEN + 1)
-        stretch_ema_val = None    # running EMA state
+    stretch_ema_val: Optional[float] = None
+    peak_stretch = 0.0
 
-        # rolling band_hist window of length HIST_LEN (mirrors QC RollingWindow)
-        bh_window: list = []
+    for i in range(BAND_LEN, n):
+        window = vals[i - BAND_LEN: i]
+        dev = float(np.std(window))
+        if dev <= 0:
+            continue
 
-        for i in range(BAND_LEN, n):
-            # ── Ceiling reset event (matches QC recovery branch) ──
-            if dates[i] in reset_set:
-                bh_window = []
+        mid   = float(ema_arr[i])
+        close = float(vals[i])
 
-            window = vals[i - BAND_LEN: i]
-            dev    = float(np.std(window))
-            if dev <= 0:
-                continue
+        stretch = abs(close - mid) / dev
+        if stretch > peak_stretch:
+            peak_stretch = stretch
 
-            mid    = float(ema_arr[i])
-            close  = float(vals[i])
+        if stretch_ema_val is None:
+            stretch_ema_val = stretch
+        else:
+            stretch_ema_val = stretch * ema_k + stretch_ema_val * (1 - ema_k)
 
-            # 1. Raw stretch (QC: stretch = abs(close - mid) / dev)
-            stretch = abs(close - mid) / dev
-            stretch_arr.append(stretch)
-
-            # 2. Peak of raw stretch (QC: stretch_max)
-            if stretch > peak_stretch:
-                peak_stretch = stretch
-
-            # 3. Manual EMA of stretch (QC: stretch_ema.Update(time, stretch))
-            if stretch_ema_val is None:
-                stretch_ema_val = stretch
-            else:
-                stretch_ema_val = stretch * ema_k + stretch_ema_val * (1 - ema_k)
-            stretch_ema_arr.append(stretch_ema_val)
-
-            # 4. Dynamic sizing bands using current stretch_ema (QC Rebalance bands)
-            lm  = stretch_ema_val
-            lm2 = lm / 2.0
-            lm3 = lm2 * 0.38196601
-            lm4 = lm * 1.38196601
-            lm5 = lm * 1.61803399
-            lm6 = (lm + lm2) / 2.0
-            sizing_bands = [
-                mid-dev*lm5, mid-dev*lm4, mid-dev*lm,  mid-dev*lm6,
-                mid-dev*lm2, mid-dev*lm3, mid,
-                mid+dev*lm3, mid+dev*lm2, mid+dev*lm6,
-                mid+dev*lm,  mid+dev*lm4, mid+dev*lm5,
-            ]
-
-            # 5. band_hist updated every bar for every ticker (QC: OnData + band_hist)
-            idx = band_index(close, sizing_bands)
-            bh_window.append(idx)
-            if len(bh_window) > HIST_LEN:
-                bh_window.pop(0)
-
-            band_idx_hist.append(idx)
-
-        if not stretch_ema_arr:
-            return None
-
-        final_stretch_ema = stretch_ema_val
-        last_close = float(vals[-1])
-        ema_val    = float(ema_arr[-1])
-        dev_val    = float(np.std(vals[-BAND_LEN:]))
-        if dev_val <= 0:
-            return None
-
-        # Final sizing bands at last bar
-        lm  = final_stretch_ema
+        lm  = stretch_ema_val
         lm2 = lm / 2.0
         lm3 = lm2 * 0.38196601
         lm4 = lm * 1.38196601
         lm5 = lm * 1.61803399
         lm6 = (lm + lm2) / 2.0
-        final_bands = [
-            ema_val-dev_val*lm5, ema_val-dev_val*lm4, ema_val-dev_val*lm,
-            ema_val-dev_val*lm6, ema_val-dev_val*lm2, ema_val-dev_val*lm3, ema_val,
-            ema_val+dev_val*lm3, ema_val+dev_val*lm2, ema_val+dev_val*lm6,
-            ema_val+dev_val*lm,  ema_val+dev_val*lm4, ema_val+dev_val*lm5,
+        sizing_bands = [
+            mid-dev*lm5, mid-dev*lm4, mid-dev*lm,  mid-dev*lm6,
+            mid-dev*lm2, mid-dev*lm3, mid,
+            mid+dev*lm3, mid+dev*lm2, mid+dev*lm6,
+            mid+dev*lm,  mid+dev*lm4, mid+dev*lm5,
         ]
+        idx = band_index(close, sizing_bands)
 
-        idx       = band_index(last_close, final_bands)
-        hist_high = max(bh_window) if bh_window else idx
+        above_ema = close > mid
+        mom_val = np.nan
+        if i >= max_lb:
+            mom_val = float(np.mean([
+                vals[i] / vals[i - lb] - 1
+                for lb in LOOKBACKS if i >= lb
+            ]))
 
-        if hist_high <= 0:      scale = 1.0
-        elif idx >= hist_high:  scale = 0.0
-        else:                   scale = max(0.2, 1.0 - idx / hist_high)
+        out_dates.append(dates[i])
+        out_idx.append(idx)
+        out_mom.append(mom_val)
+        out_above_ema.append(above_ema)
+        out_stretch_ema.append(stretch_ema_val)
+        out_stretch_max.append(peak_stretch)
+        out_dev.append(dev)
+        out_mid.append(mid)
+        out_close.append(close)
 
-        # Exhaustion: peak is raw stretch_max, current is stretch_ema (matches QC)
-        exhausted = (idx >= 10 and peak_stretch > 0
-                     and final_stretch_ema < peak_stretch * 0.80)
-        if exhausted:
-            scale = 0.2
-
-        mom = float(np.mean([
-            vals[-1] / vals[-lb - 1] - 1
-            for lb in LOOKBACKS if n > lb + 1
-        ]))
-
-        adx_val = 0.0
-        if ohlc_df is not None and len(ohlc_df) >= ADX_PERIOD * 2:
-            adx_val = compute_adx(
-                ohlc_df["High"].values.astype(float),
-                ohlc_df["Low"].values.astype(float),
-                ohlc_df["Close"].values.astype(float),
-                ADX_PERIOD,
-            )
-
-        return dict(
-            ticker=ticker,
-            last_close=last_close, ema_val=ema_val, dev_val=dev_val,
-            idx=idx, hist_high=hist_high, scale=scale,
-            mom=mom, above_ema=bool(last_close > ema_val),
-            exhausted=exhausted,
-            stretch_ema_val=final_stretch_ema, peak_stretch=peak_stretch,
-            adx=adx_val,
-            band_idx_hist=band_idx_hist[-60:],
-            company="", sector="", industry="", mktcap=0,
-        )
-    except Exception as e:
-        log_error(f"analyse_ticker {ticker}", e)
+    if not out_dates:
         return None
+
+    return dict(
+        ticker=ticker,
+        dates=out_dates,
+        idx=out_idx,
+        mom=out_mom,
+        above_ema=out_above_ema,
+        stretch_ema=out_stretch_ema,
+        stretch_max=out_stretch_max,
+        dev=out_dev,
+        mid=out_mid,
+        close=out_close,
+    )
+
+
+# ── Universe-wide top-N band_hist ranking pass (Phase B) ──────────────────────
+def compute_band_hist_top_n(series_map: dict, ceiling_reset_dates: list,
+                             stock_count: int, breadth_regime: dict = None) -> dict:
+    """
+    Matches QC's `for s in top` band_hist update scope exactly (modulo the
+    ADX caveat documented at the top of this file):
+
+      - eligible on a given bar only if above_ema AND mom > 0
+      - ranked by momentum, descending
+      - only the top `stock_count` (QC: self.stock_count) get their band
+        index appended to band_hist that bar — everyone else is skipped,
+        exactly as in QC where only symbols in `top` reach the band_hist
+        Add() call inside Rebalance.
+
+    band_hist itself is capped at HIST_LEN entries via deque(maxlen=...),
+    matching QC's RollingWindow[int](self.hist_len) behaviour.
+
+    ceiling_reset_dates wipes ALL tickers' band_hist on that date, matching
+    QC's month-end recovery reset (`self.band_hist[s] = RollingWindow[int](...)`
+    for every s in self.symbols).
+
+    breadth_regime: optional {date: regime_str} map (from breadth_df["regime"]).
+    QC's Rebalance() returns BEFORE reaching the band_hist update loop whenever
+    `not self.allow_universe` (risk-off) or whenever the universe breadth
+    sample is too small to evaluate at all (idxs < 50 → early return). This
+    means band_hist is completely FROZEN — no new entries for anyone — during
+    risk-off stretches and during breadth warmup. We replicate that by
+    skipping the update entirely (but still honoring resets) on any date
+    that is missing from breadth_regime or classified "risk_off".
+    """
+    reset_set = set(ceiling_reset_dates or [])
+    breadth_regime = breadth_regime or {}
+
+    all_dates = sorted(set(d for s in series_map.values() for d in s["dates"]))
+    pos_map   = {t: {d: i for i, d in enumerate(s["dates"])}
+                 for t, s in series_map.items()}
+
+    band_hist = {t: deque(maxlen=HIST_LEN) for t in series_map}
+
+    for date in all_dates:
+        if date in reset_set:
+            for t in band_hist:
+                band_hist[t].clear()
+
+        if breadth_regime:
+            regime = breadth_regime.get(date)
+            if regime is None or regime == "risk_off":
+                continue  # frozen: matches QC's early return before band_hist.Add()
+
+        candidates = []
+        for t, s in series_map.items():
+            i = pos_map[t].get(date)
+            if i is None:
+                continue
+            mom = s["mom"][i]
+            if np.isnan(mom):
+                continue
+            if s["above_ema"][i] and mom > 0:
+                candidates.append((t, mom, i))
+
+        candidates.sort(key=lambda x: x[1], reverse=True)
+        top = candidates[:stock_count]
+
+        for t, mom, i in top:
+            band_hist[t].append(series_map[t]["idx"][i])
+
+    return band_hist
+
+
+# ── Final per-ticker metrics (Phase C) ─────────────────────────────────────────
+def finalize_ticker(ticker: str, series: dict, band_hist_window,
+                     ohlc_df: Optional[pd.DataFrame]) -> Optional[dict]:
+    """
+    Computes the final-bar metrics for a ticker, using the band_hist window
+    produced by the universe-wide top-N ranking pass (compute_band_hist_top_n)
+    instead of an independently-gated local history.
+
+    Matches QC Rebalance exactly:
+      - historical_high = max of band_hist window (or current idx if empty)
+      - scale formula:    max(0.2, 1 - idx/hist_high), 0.0 when idx >= hist_high
+      - exhaustion:       idx >= 10 and stretch_ema < stretch_max * 0.80 -> scale = 0.2
+    """
+    if not series["dates"]:
+        return None
+
+    last_close = series["close"][-1]
+    ema_val    = series["mid"][-1]
+    dev_val    = series["dev"][-1]
+    idx        = series["idx"][-1]
+    stretch_ema_val = series["stretch_ema"][-1]
+    peak_stretch    = series["stretch_max"][-1]
+
+    hist_idx  = list(band_hist_window)
+    hist_high = max(hist_idx) if hist_idx else idx
+
+    if hist_high <= 0:
+        scale = 1.0
+    elif idx >= hist_high:
+        scale = 0.0
+    else:
+        scale = max(0.2, 1.0 - idx / hist_high)
+
+    exhausted = (idx >= 10 and peak_stretch > 0
+                 and stretch_ema_val < peak_stretch * 0.80)
+    if exhausted:
+        scale = 0.2
+
+    mom = series["mom"][-1]
+    if np.isnan(mom):
+        mom = 0.0
+
+    # adx_ready mirrors QC's self.adx[s].IsReady: if we don't have enough OHLC
+    # history to compute a real ADX value, this ticker must be EXCLUDED from
+    # eligibility (QC: `if not self.adx[s].IsReady: continue`), not defaulted
+    # to a value that happens to pass the <= ADX_LIMIT filter. adx stays 0.0
+    # for table display purposes only; adx_ready gates eligibility in
+    # run_portfolio().
+    adx_val   = 0.0
+    adx_ready = False
+    if ohlc_df is not None and len(ohlc_df) >= ADX_PERIOD * 2:
+        adx_val = compute_adx(
+            ohlc_df["High"].values.astype(float),
+            ohlc_df["Low"].values.astype(float),
+            ohlc_df["Close"].values.astype(float),
+            ADX_PERIOD,
+        )
+        adx_ready = True
+
+    return dict(
+        ticker=ticker,
+        last_close=last_close, ema_val=ema_val, dev_val=dev_val,
+        idx=idx, hist_high=hist_high, scale=scale,
+        mom=mom, above_ema=bool(last_close > ema_val),
+        exhausted=exhausted,
+        stretch_ema_val=stretch_ema_val, peak_stretch=peak_stretch,
+        adx=adx_val, adx_ready=adx_ready,
+        band_idx_hist=series["idx"][-60:],
+        company="", sector="", industry="", mktcap=0,
+    )
 
 
 def run_portfolio(results: list, breadth_df: pd.DataFrame,
                   top_n: int, max_weight: float) -> dict:
     """
     Portfolio construction using the pre-computed breadth history.
-    Current regime is taken from the last row of breadth_df.
+
+    Eligibility gate matches QC exactly:
+      - above EMA
+      - mom > 0
+      - adx <= ADX_LIMIT
+
+    Regime comes from the last row of breadth_df (current state).
+    "recovery" regime allows trading (QC resets ceilings but still invests).
     """
     if breadth_df.empty:
-        # Fallback: compute breadth from current band indices only
         all_idx     = [r["idx"] for r in results]
         bottom_frac = sum(1 for i in all_idx if i in BOTTOM_LEVELS) / max(len(all_idx), 1)
         regime      = "risk_off" if bottom_frac >= 0.45 else "risk_on"
@@ -699,11 +861,28 @@ def run_portfolio(results: list, breadth_df: pd.DataFrame,
         improvement = float(last["improvement"])
         max_stress  = float(last["max_stress_level"])
 
-    risk_off = regime in ("risk_off",)   # "recovery" allows trading
+    # QC: risk_off → Liquidate(). "recovery" regime → allow trading (ceilings reset,
+    # then normal rebalance proceeds on that same bar in QC).
+    risk_off = (regime == "risk_off")
 
+    # Eligibility: above_ema AND mom > 0 AND adx <= limit — matches QC Rebalance.
+    # adx_ready is required (matches QC's `if not self.adx[s].IsReady: continue`):
+    # a ticker with no/insufficient OHLC history must be excluded, not silently
+    # granted eligibility via a defaulted adx=0.0.
     eligible = [r for r in results
-                if r["above_ema"] and r["mom"] > 0 and r["adx"] <= ADX_LIMIT]
-    eligible.sort(key=lambda r: r["mom"] * r["scale"], reverse=True)
+                if r["above_ema"]
+                and r["mom"] > 0
+                and r.get("adx_ready", False)
+                and r["adx"] <= ADX_LIMIT]
+
+    # Selection: QC ranks `top` by RAW momentum alone (sorted(momentum, key=momentum.get)),
+    # BEFORE scale is applied. scale only affects weighting of the names already
+    # selected — it does not affect which names get selected. Sorting by mom*scale
+    # here (as an earlier version did) lets a heavily-scaled-down, high-momentum
+    # stock get bumped out of the roster by a weaker-momentum, scale=1.0 stock,
+    # which is not what QC does: QC keeps the high-momentum name in `top` and just
+    # gives it a small/zero weight via scale. Ranking must use raw momentum only.
+    eligible.sort(key=lambda r: r["mom"], reverse=True)
     top = eligible[:top_n]
 
     if risk_off or not top:
@@ -712,10 +891,12 @@ def run_portfolio(results: list, breadth_df: pd.DataFrame,
                     max_stress=max_stress,
                     positions=[], final_weights={}, all_results=results)
 
-    raw     = {r["ticker"]: r["mom"] * r["scale"] for r in top}
-    total   = sum(raw.values())
-    capped  = {t: min(max_weight, v / total) for t, v in raw.items()}
-    cs      = sum(capped.values())
+    # Proportional weights from momentum * scale
+    raw    = {r["ticker"]: r["mom"] * r["scale"] for r in top}
+    total  = sum(raw.values())
+    # Cap each position at max_weight, then re-normalise — matches QC exactly
+    capped = {t: min(max_weight, v / total) for t, v in raw.items()}
+    cs     = sum(capped.values())
     final_w = {t: v / cs for t, v in capped.items()} if cs > 0 else {}
 
     return dict(risk_off=False, regime=regime,
@@ -1042,20 +1223,24 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
     max_weight = max_weight_pct / 100.0
     meta       = universe.set_index("ticker").to_dict("index")
 
-    # ── Step 1: Breadth history (bar-by-bar, fixed bands, full recovery logic) ──
+    # ── Step 1: Breadth history (daily, fixed bands, full recovery logic) ──
     print("  Computing breadth history…")
     universe_closes = closes_df[[t for t in tickers if t in closes_df.columns]]
     breadth_df = compute_breadth_history(universe_closes)
     print(f"  Breadth history: {len(breadth_df)} trading days")
 
-    # Extract dates where ceilings were reset (recovery events)
+    # Ceiling reset dates: month-end bars where recovery fired
+    # These are the exact dates used to wipe band_hist across the whole
+    # universe, matching QC's scheduler-triggered reset.
     if not breadth_df.empty:
-        reset_dates = set(breadth_df.index[breadth_df["regime"] == "recovery"])
-        print(f"  Ceiling reset events: {len(reset_dates)}")
+        reset_dates = list(
+            breadth_df.index[breadth_df["reset_on_rebalance"] == True]
+        )
+        print(f"  Ceiling reset events (month-end): {len(reset_dates)}")
     else:
-        reset_dates = set()
+        reset_dates = []
 
-    # ── Step 2: OHLC map for ADX ──
+    # ── Step 2: OHLC map for ADX (live/current-bar only — see module docstring) ──
     ohlc_map: dict = {}
     if not ohlc_df.empty and "Ticker" in ohlc_df.columns:
         for t, grp in ohlc_df.groupby("Ticker"):
@@ -1063,14 +1248,48 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
             if len(g) >= ADX_PERIOD * 2:
                 ohlc_map[t] = g
 
-    # ── Step 3: Per-ticker analysis with reset dates passed in ──
-    results, failed = [], []
+    # ── Step 3: Phase A — per-ticker time series ──
+    series_map: dict = {}
+    failed = []
     for t in tickers:
         if t not in closes_df.columns:
             failed.append(t)
             continue
-        r = analyse_ticker(t, closes_df[t], ohlc_map.get(t),
-                           ceiling_reset_dates=list(reset_dates))
+        s = compute_ticker_series(t, closes_df[t])
+        if s is not None:
+            series_map[t] = s
+        else:
+            failed.append(t)
+
+    print(f"  series computed={len(series_map)}  failed={len(failed)}")
+
+    if not series_map:
+        return html.Div(
+            [html.Div("No tickers had sufficient price history.",
+                      style=dict(color=C["muted"])),
+             html.Div(f"Failed tickers ({len(failed)}): "
+                      f"{', '.join(failed[:20])}{'…' if len(failed)>20 else ''}",
+                      style=dict(fontSize="11px", color=C["muted"],
+                                 marginTop="6px"))],
+            style=dict(padding="2rem")), ""
+
+    # ── Step 4: Phase B — universe-wide top-N band_hist ranking pass ──
+    # Uses the SAME top_n as live portfolio construction, matching QC's
+    # single self.stock_count parameter used in both places. breadth_regime
+    # freezes accumulation on risk-off / pre-warmup days, matching QC's
+    # early-return-before-band_hist.Add() behavior in Rebalance.
+    print(f"  Building band_hist via top-{top_n} cross-sectional ranking…")
+    breadth_regime_map = (dict(zip(breadth_df.index, breadth_df["regime"]))
+                          if not breadth_df.empty else {})
+    band_hist_map = compute_band_hist_top_n(series_map, reset_dates,
+                                            stock_count=top_n,
+                                            breadth_regime=breadth_regime_map)
+
+    # ── Step 5: Phase C — final per-ticker metrics ──
+    results = []
+    for t, s in series_map.items():
+        r = finalize_ticker(t, s, band_hist_map.get(t, deque(maxlen=HIST_LEN)),
+                            ohlc_map.get(t))
         if r:
             m = meta.get(t, {})
             r["company"]  = m.get("company", "")
@@ -1093,7 +1312,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
                                  marginTop="6px"))],
             style=dict(padding="2rem")), ""
 
-    # ── Step 4: Portfolio construction using breadth regime ──
+    # ── Step 6: Portfolio construction ──
     portfolio = run_portfolio(results, breadth_df, top_n, max_weight)
     bf        = portfolio["bottom_frac"]
     roff      = portfolio["risk_off"]
@@ -1104,13 +1323,13 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
     final_w   = portfolio["final_weights"]
     all_idx   = [r["idx"] for r in results]
 
-    regime_color = (C["red"]    if roff             else
+    regime_color = (C["red"]    if roff              else
                     C["amber"]  if regime=="recovery" else
                     C["amber"]  if bf > 0.30          else C["green"])
-    regime_label = ("Risk-Off — liquidated"         if roff              else
-                    f"Recovery — improvement {improve*100:.0f}%"
-                                                     if regime=="recovery" else
-                    "Caution — elevated stress"      if bf > 0.30         else
+    regime_label = ("Risk-Off — liquidated"                    if roff              else
+                    f"Recovery — ceilings reset, improvement {improve*100:.0f}%"
+                                                                if regime=="recovery" else
+                    "Caution — elevated stress"                 if bf > 0.30         else
                     "Risk-On — fully invested")
 
     avg_mom     = float(np.mean([r["mom"] for r in positions])) if positions else 0.0
@@ -1122,9 +1341,9 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
         bd = breadth_df.reset_index()
 
         # Shade risk-off periods
-        in_roff   = False
+        in_roff    = False
         roff_start = None
-        shapes = []
+        shapes     = []
         for _, row in bd.iterrows():
             if row["regime"] == "risk_off" and not in_roff:
                 in_roff    = True
@@ -1143,17 +1362,19 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
                 fillcolor=C["red"], opacity=0.12, line_width=0,
             ))
 
-        # Recovery markers
-        rec_dates = bd[bd["regime"] == "recovery"]["date"]
+        # Recovery / ceiling-reset markers (month-end bars only)
+        rec_mask = bd["reset_on_rebalance"] == True
+        rec_dates = bd.loc[rec_mask, "date"]
         if not rec_dates.empty:
             fig_breadth.add_trace(go.Scatter(
                 x=rec_dates,
-                y=breadth_df.loc[rec_dates, "bottom_frac"] if len(rec_dates) else [],
+                y=bd.loc[rec_mask, "bottom_frac"] * 100,
                 mode="markers",
                 marker=dict(symbol="triangle-up", size=10,
-                            color=C["green"], line=dict(width=1, color=C["text"])),
-                name="Ceiling reset",
-                hovertemplate="Recovery / ceiling reset<br>%{x}<extra></extra>",
+                            color=C["green"],
+                            line=dict(width=1, color=C["text"])),
+                name="Ceiling reset (month-end)",
+                hovertemplate="Ceiling reset (month-end rebalance)<br>%{x}<extra></extra>",
             ))
 
         # bottom_frac line
@@ -1164,7 +1385,6 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
             hovertemplate="%{x}<br>Stress: %{y:.1f}%<extra></extra>",
         ))
 
-        # Threshold lines
         fig_breadth.add_hline(y=45, line=dict(color=C["red"],   dash="dot", width=1),
                               annotation_text="Risk-off (45%)",
                               annotation_font=dict(color=C["red"], size=10))
@@ -1177,12 +1397,14 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
 
         fig_breadth.update_layout(**layout(
             height=280,
-            title=dict(text="Universe breadth stress — bottom-band fraction (fixed bands)",
-                       font=dict(size=13), x=0),
+            title=dict(
+                text="Universe breadth stress — bottom-band fraction (fixed golden-ratio bands)",
+                font=dict(size=13), x=0),
             yaxis_title="% in bands 0–4",
             yaxis=dict(gridcolor=C["grid"], linecolor=C["border"],
                        tickcolor=C["border"], zerolinecolor=C["border"],
-                       ticksuffix="%", range=[0, max(55, bd["bottom_frac"].max()*110)]),
+                       ticksuffix="%",
+                       range=[0, max(55, bd["bottom_frac"].max() * 110)]),
             shapes=shapes,
             legend=dict(orientation="h", y=1.08, x=0,
                         font=dict(size=10), bgcolor="rgba(0,0,0,0)"),
@@ -1229,7 +1451,8 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
         textfont=dict(size=10, color=C["text"]),
     ))
     fig_b.update_layout(**layout(height=250,
-        title=dict(text="Universe band distribution (sizing bands)", font=dict(size=13), x=0),
+        title=dict(text="Universe band distribution (sizing bands, dynamic lm)",
+                   font=dict(size=13), x=0),
         xaxis_title="Band index  (red=stress 0-4, amber=extended 10-11)",
         yaxis_title="# stocks"))
 
@@ -1305,8 +1528,9 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
                 colorbar=dict(title="Band", tickfont=dict(size=10), len=0.8),
             ))
             fig_heat.update_layout(**layout(height=300,
-                title=dict(text="Band index history — top holdings (last 40 periods)",
-                           font=dict(size=13), x=0),
+                title=dict(
+                    text="Band index history — top holdings (last 40 periods)",
+                    font=dict(size=13), x=0),
                 xaxis_title="<- older  |  recent ->",
                 margin=dict(l=12, r=70, t=40, b=12)))
 
@@ -1317,23 +1541,25 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
         w  = final_w.get(r["ticker"], 0)
         mc = r.get("mktcap", 0) or 0
         rows.append({
-            "Ticker":    r["ticker"],
-            "Company":   r.get("company", ""),
-            "Sector":    r.get("sector", ""),
-            "Industry":  r.get("industry", ""),
-            "Price":     f"${r['last_close']:.2f}",
-            "MktCap":    (f"${mc/1e12:.2f}T" if mc >= 1e12 else
-                          f"${mc/1e9:.1f}B"  if mc >= 1e9  else
-                          f"${mc/1e6:.0f}M"),
-            "Momentum":  f"{r['mom']*100:+.2f}%",
-            "EMA":       f"${r['ema_val']:.2f}",
-            "Band":      f"{r['idx']} / {r['hist_high']}",
-            "Scale":     f"{r['scale']*100:.0f}%",
-            "ADX":       f"{r['adx']:.1f}",
-            "Weight":    f"{w*100:.1f}%" if w > 0 else "—",
-            "Status":    ("exhausted" if r["exhausted"] else
-                          "ceiling"   if r["scale"] < 0.5 else "clear"),
-            "Above EMA": "yes" if r["above_ema"] else "no",
+            "Ticker":       r["ticker"],
+            "Company":      r.get("company", ""),
+            "Sector":       r.get("sector", ""),
+            "Industry":     r.get("industry", ""),
+            "Price":        f"${r['last_close']:.2f}",
+            "MktCap":       (f"${mc/1e12:.2f}T" if mc >= 1e12 else
+                             f"${mc/1e9:.1f}B"  if mc >= 1e9  else
+                             f"${mc/1e6:.0f}M"),
+            "Momentum":     f"{r['mom']*100:+.2f}%",
+            "EMA":          f"${r['ema_val']:.2f}",
+            "Band/Peak":    f"{r['idx']} / {r['hist_high']}",
+            "Scale":        f"{r['scale']*100:.0f}%",
+            "StretchEMA":   f"{r['stretch_ema_val']:.2f}",
+            "PeakStretch":  f"{r['peak_stretch']:.2f}",
+            "ADX":          f"{r['adx']:.1f}",
+            "Weight":       f"{w*100:.1f}%" if w > 0 else "—",
+            "Status":       ("exhausted" if r["exhausted"] else
+                             "ceiling"   if r["scale"] < 0.5 else "clear"),
+            "Above EMA":    "yes" if r["above_ema"] else "no",
         })
 
     cond = [
@@ -1384,7 +1610,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
                           border=f"1px solid {C['border']}"),
     )
 
-    n_resets = len(reset_dates)
+    n_resets  = len(reset_dates)
     status_msg = (f"{len(results)} analysed  ·  "
                   f"{len(failed)} skipped  ·  "
                   f"{len(positions)} positions  ·  "
@@ -1408,7 +1634,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
                 html.Span(f"Ceiling resets: {n_resets}",
                           style=dict(fontSize="12px", color=C["muted"])),
                 html.Span(" · ", style=dict(color=C["border"], padding="0 6px")),
-                html.Span("Risk-off ≥45%  ·  Recovery: improvement ≥60% or stress <15%",
+                html.Span("Risk-off ≥45%  ·  Recovery: improvement ≥60% or stress <15%  ·  Resets fire on month-end rebalance",
                           style=dict(fontSize="12px", color=C["muted"])),
             ], style=dict(marginLeft="auto", display="flex",
                           alignItems="center", flexWrap="wrap", gap="2px")),
@@ -1441,7 +1667,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
                            C["red"] if roff else
                            (C["amber"] if bf > 0.3 else C["green"])),
                 metric_box("Ceiling resets", str(n_resets),
-                           "recovery events in history",
+                           "month-end recovery events",
                            C["amber"] if n_resets > 0 else None),
             ], style=dict(display="flex", gap="10px", flexWrap="wrap")),
         ]),

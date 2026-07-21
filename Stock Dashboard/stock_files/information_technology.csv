@@ -1,181 +1,197 @@
 Symbol,Company Name,Security Type,Security Price,Market Capitalization,Sector,Industry,Sub-Industry,Exchange
-AAPL,Apple Inc,Common Stock,258.9,$3.72T,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
-ACN,Accenture PLC,Common Stock,193.84,$121.13B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
-ADBE,Adobe Inc,Common Stock,239.31,$97.06B,Information Technology,Software,Application Software,NASDAQ
-ADI,Analog Devices Inc,Common Stock,346.21,$159.84B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-ADSK,Autodesk Inc,Common Stock,240.65,$49.58B,Information Technology,Software,Application Software,NASDAQ
-AEIS,Advanced Energy Industries Inc,Common Stock,366.95,$12.90B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NASDAQ
-AKAM,Akamai Technologies Inc,Common Stock,116,$16.77B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
-AMAT,Applied Materials Inc,Common Stock,385.72,$281.18B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-AMD,Advanced Micro Devices Inc,Common Stock,231.82,$361.17B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-AMKR,Amkor Technology Inc,Common Stock,52.42,$11.80B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-BMNR,Bitmine Immersion Technologies Inc,Common Stock,21.52,$9.18B,Information Technology,Software,Application Software,AMEX
-APH,Amphenol Corp,Common Stock,135.32,$157.81B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Components,NYSE
-RIOT,Riot Platforms Inc,Common Stock,16.11,$5.38B,Information Technology,Software,Application Software,NASDAQ
-ARW,Arrow Electronics Inc,Common Stock,154.98,$7.55B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NYSE
-ASML,ASML Holding NV,Depository Receipt,1421.05,$503.53B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-AVT,Avnet Inc,Common Stock,66,$5.12B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NASDAQ
-CAMT,Camtek Ltd,Common Stock,170.09,$7.41B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-CDNS,Cadence Design Systems Inc,Common Stock,289.5,$77.10B,Information Technology,Software,Application Software,NASDAQ
-CGNX,Cognex Corporation,Common Stock,53.78,$8.63B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NASDAQ
-CHKP,Check Point Software Technologies Ltd,Common Stock,145.87,$15.47B,Information Technology,Software,Systems Software,NASDAQ
-CLS,Celestica Inc,Common Stock,320.7,$34.18B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NYSE
-CRM,SALESFORCE INC,Common Stock,176.37,$168.87B,Information Technology,Software,Application Software,NYSE
-CRUS,Cirrus Logic Inc.,Common Stock,154.82,$7.52B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-CTSH,Cognizant Technology Solutions Corp,Common Stock,61,$29.41B,Information Technology,IT Services,IT Consulting & Other Services,NASDAQ
-DLB,Dolby Laboratories Inc,Common Stock,61.43,$5.85B,Information Technology,Software,Systems Software,NYSE
-DOX,Amdocs Ltd,Common Stock,66,$7.14B,Information Technology,IT Services,IT Consulting & Other Services,NASDAQ
-DSGX,Descartes Systems Group Inc (The),Common Stock,67.32,$5.97B,Information Technology,Software,Application Software,NASDAQ
-ENTG,Entegris Inc,Common Stock,129.6,$18.05B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-ERIC,Telefonaktiebolaget LM Ericsson (publ),Depository Receipt,11.85,$35.35B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
-FFIV,F5 Inc,Common Stock,304.76,$17.47B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
-FICO,Fair Isaac Corporation,Common Stock,1092.04,$25.67B,Information Technology,Software,Application Software,NYSE
-FLEX,Flex Ltd,Common Stock,73.19,$25.08B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NASDAQ
-APLD,Applied Digital Corp,Common Stock,27.79,$7.04B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
-FORM,FormFactor Inc,Common Stock,117.8,$8.19B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-GIB,CGI Inc,Common Stock,71.98,$15.61B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
-GLW,Corning Inc,Common Stock,165.1,$127.58B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Components,NYSE
-HPQ,HP Inc,Common Stock,18.89,$17.02B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
-IBM,International Business Machines Corp,Common Stock,241.74,$229.88B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
-IDCC,InterDigital Inc,Common Stock,344.96,$8.10B,Information Technology,Software,Application Software,NASDAQ
-COHR,Coherent Corp,Common Stock,281.79,$49.81B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Components,NYSE
-WULF,Terawulf Inc.,Common Stock,18.05,$7.03B,Information Technology,Software,Application Software,NASDAQ
-INFY,Infosys Ltd,Depository Receipt,14,$56.49B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
-INTC,Intel Corp,Common Stock,58.95,$265.66B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-INTU,Intuit Inc.,Common Stock,389.51,$113.45B,Information Technology,Software,Application Software,NASDAQ
-IT,Gartner Inc,Common Stock,149.4,$10.47B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
-JBL,Jabil Inc,Common Stock,287.14,$28.81B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NYSE
-VIAV,Viavi Solutions Inc,Common Stock,41.41,$8.92B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
-KLAC,KLA Corp,Common Stock,1672.34,$203.02B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-LFUS,Littelfuse Inc,Common Stock,368.07,$8.66B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Components,NASDAQ
-LOGI,"Logitech International SA, Apples",Common Stock,94.79,$13.62B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
-LRCX,Lam Research Corp,Common Stock,246.49,$280.16B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-LSCC,Lattice Semiconductor Corporation,Common Stock,106.56,$13.25B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-MANH,Manhattan Associates Inc,Common Stock,133.5,$8.00B,Information Technology,Software,Application Software,NASDAQ
-MCHP,Microchip Technology Inc,Common Stock,70.73,$36.53B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-MKSI,MKS Inc,Common Stock,256.01,$16.03B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-MSI,Motorola Solutions Inc,Common Stock,447.73,$73.54B,Information Technology,Communications Equipment,Communications Equipment,NYSE
-MPWR,Monolithic Power Systems Inc,Common Stock,1312.94,$58.51B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-MRVL,Marvell Technology Inc,Common Stock,114.45,$95.65B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-MSFT,Microsoft Corp,Common Stock,374.33,$2.76T,Information Technology,Software,Systems Software,NASDAQ
-MSTR,Strategy Inc,Common Stock,128.3,$42.76B,Information Technology,Software,Application Software,NASDAQ
-MU,Micron Technology Inc.,Common Stock,406.73,$425.81B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-ONTO,Onto Innovation Inc,Common Stock,240.49,$10.90B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NYSE
-NICE,NICE Ltd,Depository Receipt,108.86,$6.75B,Information Technology,Software,Application Software,NASDAQ
-NOK,Nokia OYJ,Depository Receipt,9.44,$49.41B,Information Technology,Communications Equipment,Communications Equipment,NYSE
-NTAP,NetApp Inc,Common Stock,99.47,$19.26B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
-NVDA,NVIDIA Corporation,Common Stock,182.08,$4.33T,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-NVMI,Nova Ltd,Common Stock,475.52,$14.12B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-ON,ON Semiconductor Corp,Common Stock,68.38,$25.09B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-ORCL,Oracle Corp,Common Stock,143.66,$411.76B,Information Technology,Software,Systems Software,NYSE
-OTEX,Open Text Corp,Common Stock,21.56,$5.57B,Information Technology,Software,Application Software,NASDAQ
-PEGA,Pegasystems Inc,Common Stock,41.2,$7.16B,Information Technology,Software,Application Software,NASDAQ
-PLXS,Plexus Corp,Common Stock,219.13,$5.57B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NASDAQ
-PTC,PTC Inc,Common Stock,144.32,$17.13B,Information Technology,Software,Application Software,NASDAQ
-QCOM,QUALCOMM Inc.,Common Stock,127.51,$132.38B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-RMBS,Rambus Inc,Common Stock,101.43,$9.94B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-ROP,Roper Technologies Inc,Common Stock,355.85,$36.93B,Information Technology,Software,Application Software,NASDAQ
-SANM,Sanmina Corp,Common Stock,139.85,$7.20B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NASDAQ
-SAP,SAP SE,Depository Receipt,169.18,$197.70B,Information Technology,Software,Application Software,NYSE
-SLAB,Silicon Laboratories Inc,Common Stock,210.36,$6.92B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-SMTC,Semtech Corp,Common Stock,86.95,$7.72B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-SNPS,Synopsys Inc,Common Stock,410.16,$76.22B,Information Technology,Software,Application Software,NASDAQ
-SNX,TD SYNNEX Corp,Common Stock,200.22,$15.72B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NYSE
-STM,STMicroelectronics NV,Depository Receipt,37.98,$31.71B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NYSE
-STX,Seagate Technology Holdings plc,Common Stock,496.3,$105.00B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
-SWKS,Skyworks Solutions Inc,Common Stock,56.54,$8.28B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-GEN,Gen Digital Inc,Common Stock,18.89,$11.62B,Information Technology,Software,Systems Software,NASDAQ
-TDY,Teledyne Technologies Inc.,Common Stock,660.31,$29.41B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NYSE
-TER,Teradyne Inc,Common Stock,358.29,$50.17B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
-TRMB,Trimble Inc,Common Stock,66.74,$15.02B,Information Technology,Software,Application Software,NASDAQ
-TSEM,Tower Semiconductor Ltd,Common Stock,203.68,$21.48B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-TSM,Taiwan Semiconductor Manufacturing Co Ltd,Depository Receipt,365.9,$1.79T,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NYSE
-TTMI,TTM Technologies Inc,Common Stock,105.85,$10.31B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NASDAQ
-TXN,Texas Instruments Inc,Common Stock,208.9,$181.85B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-TYL,Tyler Technologies Inc,Common Stock,327.88,$14.17B,Information Technology,Software,Application Software,NYSE
-UMC,United Microelectronics Corp,Depository Receipt,9.47,$23.42B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NYSE
-VRSN,VeriSign Inc,Common Stock,270.9,$25.19B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
-VSAT,ViaSat Inc,Common Stock,56.33,$7.32B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
-WDC,Western Digital Corp,Common Stock,338.78,$105.77B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
-ZBRA,Zebra Technologies Corp,Common Stock,221.14,$10.28B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NASDAQ
-CSCO,Cisco Systems Inc,Common Stock,83.7,$318.68B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
-CIEN,Ciena Corp,Common Stock,494.01,$63.33B,Information Technology,Communications Equipment,Communications Equipment,NYSE
-FSLR,First Solar Inc,Common Stock,200.78,$20.66B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-SMCI,Super Micro Computer Inc,Common Stock,23.37,$13.61B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
-TEL,TE Connectivity plc,Common Stock,223.03,$61.91B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NYSE
-AVGO,Broadcom Inc,Common Stock,350.63,$1.58T,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-FTNT,Fortinet Inc,Common Stock,83.51,$61.95B,Information Technology,Software,Systems Software,NASDAQ
-FN,Fabrinet,Common Stock,610.18,$19.98B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NYSE
-NXPI,NXP Semiconductors NV,Common Stock,204.27,$49.31B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-NBIS,Nebius Group N V,Common Stock,125,$29.70B,Information Technology,Software,Systems Software,NASDAQ
-UI,Ubiquiti Inc,Common Stock,900.5,$50.65B,Information Technology,Communications Equipment,Communications Equipment,NYSE
-GWRE,Guidewire Software Inc,Common Stock,136.87,$12.37B,Information Technology,Software,Application Software,NYSE
-EPAM,EPAM Systems Inc,Common Stock,129.99,$7.08B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
-MTSI,MACOM Technology Solutions Holdings Inc,Common Stock,247,$17.78B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-NOW,ServiceNow Inc,Common Stock,97.47,$104.19B,Information Technology,Software,Systems Software,NYSE
-PANW,Palo Alto Networks Inc,Common Stock,173.78,$137.76B,Information Technology,Software,Systems Software,NASDAQ
-WDAY,Workday Inc,Common Stock,119.17,$32.77B,Information Technology,Software,Application Software,NASDAQ
-CDW,CDW Corp,Common Stock,126.73,$15.96B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NASDAQ
-AAOI,Applied Optoelectronics Inc,Common Stock,132.7,$8.85B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
-ANET,Arista Networks Inc,Common Stock,145.07,$167.92B,Information Technology,Communications Equipment,Communications Equipment,NYSE
-HUBS,HubSpot Inc,Common Stock,217.98,$12.00B,Information Technology,Software,Application Software,NYSE
-KEYS,Keysight Technologies Inc,Common Stock,318.33,$51.56B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NYSE
-QRVO,Qorvo Inc,Common Stock,79.57,$7.21B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-GDDY,GoDaddy Inc,Common Stock,80.82,$11.11B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
-SHOP,Shopify Inc,Common Stock,120.1,$152.66B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
-APPF,AppFolio Inc,Common Stock,154.66,$5.64B,Information Technology,Software,Application Software,NASDAQ
-LITE,Lumentum Holdings Inc,Common Stock,896.02,$58.24B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
-PSTG,Everpure Inc,Common Stock,62.25,$20.45B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
-HPE,Hewlett Packard Enterprise Co,Common Stock,24.98,$32.68B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
-TEAM,Atlassian Corporation,Common Stock,63.62,$17.10B,Information Technology,Software,Application Software,NASDAQ
-NTNX,Nutanix Inc,Common Stock,39.41,$10.48B,Information Technology,Software,Application Software,NASDAQ
-TWLO,Twilio Inc,Common Stock,129.61,$20.08B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
-GDS,GDS Holdings Limited,Depository Receipt,40.76,$7.72B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
-OKTA,Okta Inc,Common Stock,76.04,$14.03B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
-MDB,MongoDB Inc,Common Stock,250.32,$20.42B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
-ZS,Zscaler Inc,Common Stock,137.85,$22.85B,Information Technology,Software,Systems Software,NASDAQ
-DBX,Dropbox Inc,Common Stock,22.7,$5.50B,Information Technology,Software,Application Software,NASDAQ
-HUT,Hut 8 Corp,Common Stock,61.43,$5.91B,Information Technology,Software,Application Software,NASDAQ
-DOCU,DocuSign Inc.,Common Stock,45.71,$9.21B,Information Technology,Software,Application Software,NASDAQ
-ASX,ASE Technology Holding Co Ltd,Depository Receipt,24.14,$48.54B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NYSE
-ESTC,Elastic N.V.,Common Stock,48.72,$5.16B,Information Technology,Software,Application Software,NYSE
-DELL,Dell Technologies Inc,Common Stock,185.47,$114.74B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
-ZM,Zoom Communications Inc,Common Stock,83.23,$24.76B,Information Technology,Software,Application Software,NASDAQ
-CRWD,CrowdStrike Holdings Inc,Common Stock,426.51,$107.34B,Information Technology,Software,Systems Software,NASDAQ
-DT,Dynatrace Inc,Common Stock,36.8,$11.09B,Information Technology,Software,Application Software,NYSE
-NET,Cloudflare Inc,Common Stock,211.25,$76.13B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
-DDOG,Datadog Inc,Common Stock,116.5,$41.24B,Information Technology,Software,Application Software,NASDAQ
-SITM,SiTime Corp,Common Stock,394.92,$9.77B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-VNT,Vontier Corp,Common Stock,36.88,$5.00B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NYSE
-PCOR,Procore Technologies Inc,Common Stock,54.68,$8.40B,Information Technology,Software,Application Software,NYSE
-SNOW,Snowflake Inc,Common Stock,149.99,$51.59B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
-PLTR,Palantir Technologies Inc,Common Stock,140.76,$358.77B,Information Technology,Software,Application Software,NASDAQ
-FROG,JFrog Ltd,Common Stock,46.66,$5.87B,Information Technology,Software,Systems Software,NASDAQ
-U,Unity Software Inc,Common Stock,22.24,$9.60B,Information Technology,Software,Application Software,NYSE
-BSY,Bentley System Inc,Common Stock,35.03,$10.40B,Information Technology,Software,Application Software,NASDAQ
-ALGM,Allegro MicroSystems Inc,Common Stock,35.87,$6.17B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-CIFR,Cipher Digital Inc,Common Stock,15.42,$5.68B,Information Technology,Software,Application Software,NASDAQ
-QBTS,D-Wave Quantum Inc,Common Stock,14.57,$5.08B,Information Technology,Software,Application Software,NYSE
-IONQ,IonQ Inc,Common Stock,28.99,$10.45B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
-DOCN,DigitalOcean Holdings Inc,Common Stock,89.38,$9.00B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
-APP,AppLovin Corporation,Common Stock,391.2,$138.43B,Information Technology,Software,Application Software,NASDAQ
-PATH,UiPath Inc,Common Stock,10.39,$5.74B,Information Technology,Software,Systems Software,NYSE
-YOU,Clear Secure Inc,Common Stock,50.41,$7.02B,Information Technology,Software,Application Software,NYSE
-CWAN,Clearwater Analytics Holdings Inc,Common Stock,24.02,$7.12B,Information Technology,Software,Application Software,NYSE
-GFS,GLOBALFOUNDRIES Inc,Common Stock,47.8,$24.12B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-IREN,IREN Limited,Common Stock,36.83,$14.26B,Information Technology,Software,Application Software,NASDAQ
-IOT,Samsara Inc,Common Stock,29.3,$17.69B,Information Technology,Software,Application Software,NYSE
-CRDO,Credo Technology Group Holding Ltd,Common Stock,110.21,$19.70B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-ARM,Arm Holdings plc,Depository Receipt,148.91,$152.78B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-KVYO,Klaviyo Inc,Common Stock,18.08,$5.68B,Information Technology,Software,Application Software,NYSE
-CORZ,Core Scientific Inc,Common Stock,17.66,$5.31B,Information Technology,Software,Application Software,NASDAQ
-ALAB,Astera Labs Inc,Common Stock,125.46,$20.25B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
-RBRK,Rubrik Inc,Common Stock,51.63,$10.68B,Information Technology,Software,Systems Software,NYSE
-INGM,Ingram Micro Holding Corp,Common Stock,26.82,$6.00B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NYSE
-TTAN,ServiceTitan Inc,Common Stock,62.12,$5.99B,Information Technology,Software,Application Software,NASDAQ
-SNDK,Sandisk Corp,Common Stock,780.9,$104.91B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
-SAIL,SailPoint Inc,Common Stock,12.41,$7.23B,Information Technology,Software,Application Software,NASDAQ
-CRWV,CoreWeave Inc,Common Stock,88.9,$44.81B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
-CRCL,Circle Internet Group Inc,Common Stock,94.44,$23.27B,Information Technology,Software,Application Software,NYSE
-FIG,Figma Inc,Common Stock,20.15,$11.06B,Information Technology,Software,Application Software,NYSE
-Q,Qnity Electronics Inc,Common Stock,129.34,$24.95B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NYSE
+NVDA,NVIDIA Corporation,Common Stock,207.29,$4.92T,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+AAPL,Apple Inc,Common Stock,327.74,$4.80T,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
+MSFT,Microsoft Corp,Common Stock,397.75,$2.99T,Information Technology,Software,Systems Software,NASDAQ
+TSM,Taiwan Semiconductor Manufacturing Co Ltd,Depository Receipt,424.61,$2.09T,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NYSE
+AVGO,Broadcom Inc,Common Stock,386.5,$1.80T,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+MU,Micron Technology Inc.,Common Stock,970.82,$977.44B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+AMD,Advanced Micro Devices Inc,Common Stock,544.43,$821.12B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+ASML,ASML Holding NV,Depository Receipt,1801.51,$667.96B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+INTC,Intel Corp,Common Stock,105.45,$487.82B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+CSCO,Cisco Systems Inc,Common Stock,112.18,$436.32B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
+AMAT,Applied Materials Inc,Common Stock,564.55,$417.38B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+LRCX,Lam Research Corp,Common Stock,322,$383.63B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+ORCL,Oracle Corp,Common Stock,127.05,$349.63B,Information Technology,Software,Systems Software,NYSE
+PLTR,Palantir Technologies Inc,Common Stock,132.66,$323.28B,Information Technology,Software,Application Software,NASDAQ
+ARM,Arm Holdings plc,Depository Receipt,289.73,$287.96B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+PANW,Palo Alto Networks Inc,Common Stock,342.15,$284.16B,Information Technology,Software,Systems Software,NASDAQ
+KLAC,KLA Corp,Common Stock,217.56,$271.18B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+TXN,Texas Instruments Inc,Common Stock,291.3,$258.53B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+DELL,Dell Technologies Inc,Common Stock,404.15,$246.75B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
+ANET,Arista Networks Inc,Common Stock,174.58,$213.25B,Information Technology,Communications Equipment,Communications Equipment,NYSE
+SNDK,Sandisk Corp,Common Stock,1589.4,$205.99B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
+CRWD,CrowdStrike Holdings Inc,Common Stock,191.15,$202.13B,Information Technology,Software,Systems Software,NASDAQ
+IBM,International Business Machines Corp,Common Stock,210.5,$200.20B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
+APH,Amphenol Corp,Common Stock,157.81,$185.16B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Components,NYSE
+SAP,SAP SE,Depository Receipt,154.34,$184.88B,Information Technology,Software,Application Software,NYSE
+STX,Seagate Technology Holdings plc,Common Stock,891.83,$181.56B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
+ADI,Analog Devices Inc,Common Stock,382.81,$181.42B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+QCOM,QUALCOMM Inc.,Common Stock,173.5,$179.52B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+MRVL,Marvell Technology Inc,Common Stock,207.96,$170.72B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+WDC,Western Digital Corp,Common Stock,548.39,$168.00B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
+SHOP,Shopify Inc,Common Stock,123.03,$161.53B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
+APP,AppLovin Corporation,Common Stock,428.69,$142.64B,Information Technology,Software,Application Software,NASDAQ
+CRM,SALESFORCE INC,Common Stock,170.06,$142.33B,Information Technology,Software,Application Software,NYSE
+GLW,Corning Inc,Common Stock,162.41,$131.76B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Components,NYSE
+FTNT,Fortinet Inc,Common Stock,158.1,$117.49B,Information Technology,Software,Systems Software,NASDAQ
+NOW,ServiceNow Inc,Common Stock,102.06,$107.98B,Information Technology,Software,Systems Software,NYSE
+NET,Cloudflare Inc,Common Stock,272.31,$96.69B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
+SNOW,Snowflake Inc,Common Stock,271.73,$95.09B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
+DDOG,Datadog Inc,Common Stock,254.79,$93.69B,Information Technology,Software,Application Software,NASDAQ
+ADBE,Adobe Inc,Common Stock,227.16,$93.31B,Information Technology,Software,Application Software,NASDAQ
+CDNS,Cadence Design Systems Inc,Common Stock,344.64,$91.00B,Information Technology,Software,Application Software,NASDAQ
+ACN,Accenture PLC,Common Stock,140.86,$88.57B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
+ASX,ASE Technology Holding Co Ltd,Depository Receipt,40.01,$80.97B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NYSE
+INTU,Intuit Inc.,Common Stock,289.92,$80.37B,Information Technology,Software,Application Software,NASDAQ
+SNPS,Synopsys Inc,Common Stock,389.07,$72.47B,Information Technology,Software,Application Software,NASDAQ
+MSI,Motorola Solutions Inc,Common Stock,406.28,$68.13B,Information Technology,Communications Equipment,Communications Equipment,NYSE
+NXPI,NXP Semiconductors NV,Common Stock,273.15,$67.46B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+MPWR,Monolithic Power Systems Inc,Common Stock,1383.26,$65.28B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+LITE,Lumentum Holdings Inc,Common Stock,837.56,$59.56B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
+TEL,TE Connectivity plc,Common Stock,209.01,$59.30B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NYSE
+HPE,Hewlett Packard Enterprise Co,Common Stock,46.72,$59.01B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
+NOK,Nokia OYJ,Depository Receipt,10.63,$56.37B,Information Technology,Communications Equipment,Communications Equipment,NYSE
+COHR,Coherent Corp,Common Stock,317.22,$55.84B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Components,NYSE
+STM,STMicroelectronics NV,Depository Receipt,65.43,$54.91B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NYSE
+KEYS,Keysight Technologies Inc,Common Stock,328.11,$53.68B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NYSE
+CIEN,Ciena Corp,Common Stock,408.73,$53.62B,Information Technology,Communications Equipment,Communications Equipment,NYSE
+ALAB,Astera Labs Inc,Common Stock,319.79,$52.98B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+TER,Teradyne Inc,Common Stock,374.04,$52.25B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+UMC,United Microelectronics Corp,Depository Receipt,21.19,$51.06B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NYSE
+NBIS,Nebius Group N V,Common Stock,216.92,$46.37B,Information Technology,Software,Systems Software,NASDAQ
+ADSK,Autodesk Inc,Common Stock,211.15,$45.96B,Information Technology,Software,Application Software,NASDAQ
+INFY,Infosys Ltd,Depository Receipt,11.16,$45.80B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
+FLEX,Flex Ltd,Common Stock,127.39,$43.93B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NASDAQ
+MCHP,Microchip Technology Inc,Common Stock,83.38,$43.72B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+CBRS,Cerebras Systems Inc,Common Stock,208.57,$40.07B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+CRWV,CoreWeave Inc,Common Stock,79.58,$39.86B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
+CRDO,Credo Technology Group Holding Ltd,Common Stock,223.87,$39.55B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+ROP,Roper Technologies Inc,Common Stock,350.69,$36.62B,Information Technology,Software,Application Software,NASDAQ
+WDAY,Workday Inc,Common Stock,141.17,$36.36B,Information Technology,Software,Application Software,NASDAQ
+CLS,Celestica Inc,Common Stock,339.59,$35.34B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NYSE
+MSTR,Strategy Inc,Common Stock,101.95,$34.75B,Information Technology,Software,Application Software,NASDAQ
+ON,ON Semiconductor Corp,Common Stock,91.06,$33.74B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+JBL,Jabil Inc,Common Stock,318.93,$32.27B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NYSE
+UI,Ubiquiti Inc,Common Stock,535.94,$32.22B,Information Technology,Communications Equipment,Communications Equipment,NYSE
+NTAP,NetApp Inc,Common Stock,165.76,$31.57B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
+GFS,GLOBALFOUNDRIES Inc,Common Stock,59.39,$31.17B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+TWLO,Twilio Inc,Common Stock,196.22,$31.15B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
+FICO,Fair Isaac Corporation,Common Stock,1227.34,$29.31B,Information Technology,Software,Application Software,NYSE
+ERIC,Telefonaktiebolaget LM Ericsson (publ),Depository Receipt,9.59,$29.06B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
+TDY,Teledyne Technologies Inc.,Common Stock,647.48,$29.03B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NYSE
+Q,Qnity Electronics Inc,Common Stock,138.78,$28.17B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NYSE
+ZM,Zoom Communications Inc,Common Stock,89.77,$26.66B,Information Technology,Software,Application Software,NASDAQ
+MDB,MongoDB Inc,Common Stock,307.65,$26.01B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
+OKTA,Okta Inc,Common Stock,141.71,$25.79B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
+TSEM,Tower Semiconductor Ltd,Common Stock,250.91,$25.63B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+VRSN,VeriSign Inc,Common Stock,266.15,$25.26B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
+TEAM,Atlassian Corporation,Common Stock,90.6,$24.47B,Information Technology,Software,Application Software,NASDAQ
+ZS,Zscaler Inc,Common Stock,148.72,$24.23B,Information Technology,Software,Systems Software,NASDAQ
+P,Everpure Inc,Common Stock,74.32,$23.25B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
+FFIV,F5 Inc,Common Stock,408.74,$23.24B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
+IOT,Samsara Inc,Common Stock,36.07,$22.46B,Information Technology,Software,Application Software,NYSE
+HPQ,HP Inc,Common Stock,24.81,$22.15B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
+FSLR,First Solar Inc,Common Stock,206.05,$22.06B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+MKSI,MKS Inc,Common Stock,345.44,$21.90B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+CTSH,Cognizant Technology Solutions Corp,Common Stock,43.63,$21.15B,Information Technology,IT Services,IT Consulting & Other Services,NASDAQ
+MTSI,MACOM Technology Solutions Holdings Inc,Common Stock,283.03,$20.58B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+ENTG,Entegris Inc,Common Stock,140.17,$20.40B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+SNX,TD SYNNEX Corp,Common Stock,249.3,$19.07B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NYSE
+AKAM,Akamai Technologies Inc,Common Stock,124.91,$17.90B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
+FN,Fabrinet,Common Stock,527.35,$17.71B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NYSE
+LSCC,Lattice Semiconductor Corporation,Common Stock,135.83,$17.20B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+CDW,CDW Corp,Common Stock,129.72,$16.61B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NASDAQ
+CRCL,Circle Internet Group Inc,Common Stock,71.08,$16.27B,Information Technology,Software,Application Software,NYSE
+RBRK,Rubrik Inc,Common Stock,75.8,$16.09B,Information Technology,Software,Systems Software,NYSE
+GEN,Gen Digital Inc,Common Stock,26.11,$16.07B,Information Technology,Software,Systems Software,NASDAQ
+AMKR,Amkor Technology Inc,Common Stock,66.73,$15.51B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+SMCI,Super Micro Computer Inc,Common Stock,25.5,$15.41B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
+QNT,Quantinuum Inc,Common Stock,58.58,$14.97B,Information Technology,IT Services,IT Consulting & Other Services,NASDAQ
+NTNX,Nutanix Inc,Common Stock,54.19,$14.90B,Information Technology,Software,Application Software,NASDAQ
+SITM,SiTime Corp,Common Stock,590.18,$14.65B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+LOGI,"Logitech International SA, Apples",Common Stock,102.91,$14.61B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NASDAQ
+GIB,CGI Inc,Common Stock,66.64,$14.43B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
+PTC,PTC Inc,Common Stock,120.77,$14.42B,Information Technology,Software,Application Software,NASDAQ
+IREN,IREN Limited,Common Stock,41.29,$14.37B,Information Technology,Software,Application Software,NASDAQ
+CHKP,Check Point Software Technologies Ltd,Common Stock,130.46,$14.12B,Information Technology,Software,Systems Software,NASDAQ
+DOCN,DigitalOcean Holdings Inc,Common Stock,136.45,$13.92B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
+ONTO,Onto Innovation Inc,Common Stock,299.05,$13.86B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NYSE
+TTMI,TTM Technologies Inc,Common Stock,146.85,$13.83B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NASDAQ
+NVMI,Nova Ltd,Common Stock,453.1,$13.78B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+TYL,Tyler Technologies Inc,Common Stock,299.74,$13.41B,Information Technology,Software,Application Software,NYSE
+U,Unity Software Inc,Common Stock,29.87,$13.01B,Information Technology,Software,Application Software,NYSE
+DT,Dynatrace Inc,Common Stock,42.85,$12.98B,Information Technology,Software,Application Software,NYSE
+IONQ,IonQ Inc,Common Stock,35.51,$12.78B,Information Technology,"Technology Hardware, Storage & Peripherals","Technology Hardware, Storage & Peripherals",NYSE
+FIG,Figma Inc,Common Stock,21.93,$12.69B,Information Technology,Software,Application Software,NYSE
+ZBRA,Zebra Technologies Corp,Common Stock,262.4,$12.61B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NASDAQ
+GDDY,GoDaddy Inc,Common Stock,92.32,$12.56B,Information Technology,IT Services,Internet Services & Infrastructure,NYSE
+GWRE,Guidewire Software Inc,Common Stock,142.53,$12.42B,Information Technology,Software,Application Software,NYSE
+HUT,Hut 8 Corp,Common Stock,108.98,$12.42B,Information Technology,Software,Application Software,NASDAQ
+TRMB,Trimble Inc,Common Stock,51.85,$12.40B,Information Technology,Software,Application Software,NASDAQ
+AUR,Aurora Innovation Inc,Common Stock,6.31,$11.94B,Information Technology,Software,Application Software,NASDAQ
+HUBS,HubSpot Inc,Common Stock,218.56,$11.84B,Information Technology,Software,Application Software,NYSE
+SMTC,Semtech Corp,Common Stock,137.84,$11.73B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+FROG,JFrog Ltd,Common Stock,86.56,$10.95B,Information Technology,Software,Systems Software,NASDAQ
+RMBS,Rambus Inc,Common Stock,105.79,$10.91B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+SANM,Sanmina Corp,Common Stock,219.41,$10.82B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NASDAQ
+AEIS,Advanced Energy Industries Inc,Common Stock,303.71,$10.67B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NASDAQ
+ARW,Arrow Electronics Inc,Common Stock,216.23,$10.51B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NYSE
+CGNX,Cognex Corporation,Common Stock,62.94,$10.50B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NASDAQ
+LFUS,Littelfuse Inc,Common Stock,414.53,$10.16B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Components,NASDAQ
+BMNR,Bitmine Immersion Technologies Inc,Common Stock,17.23,$10.03B,Information Technology,Software,Application Software,NYSE
+DOCU,DocuSign Inc.,Common Stock,50.74,$9.99B,Information Technology,Software,Application Software,NASDAQ
+BSY,Bentley System Inc,Common Stock,31.26,$9.83B,Information Technology,Software,Application Software,NASDAQ
+MANH,Manhattan Associates Inc,Common Stock,159.12,$9.79B,Information Technology,Software,Application Software,NASDAQ
+VIAV,Viavi Solutions Inc,Common Stock,43.02,$9.73B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
+VSAT,ViaSat Inc,Common Stock,73.69,$9.49B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
+IT,Gartner Inc,Common Stock,134.77,$9.44B,Information Technology,IT Services,IT Consulting & Other Services,NYSE
+WULF,Terawulf Inc.,Common Stock,19.87,$9.35B,Information Technology,Software,Application Software,NASDAQ
+SWKS,Skyworks Solutions Inc,Common Stock,62.95,$8.99B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+ALGM,Allegro MicroSystems Inc,Common Stock,49.35,$8.64B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+SAIL,SailPoint Inc,Common Stock,14.77,$8.63B,Information Technology,Software,Application Software,NASDAQ
+SIMO,Silicon Motion Technology Corp,Depository Receipt,278.17,$8.58B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+CIFR,Cipher Digital Inc,Common Stock,22.89,$8.40B,Information Technology,Software,Application Software,NASDAQ
+AAOI,Applied Optoelectronics Inc,Common Stock,119.26,$8.27B,Information Technology,Communications Equipment,Communications Equipment,NASDAQ
+FORM,FormFactor Inc,Common Stock,113.75,$8.21B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+APLD,Applied Digital Corp,Common Stock,30.05,$7.96B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
+RAL,Ralliant Corp,Common Stock,71,$7.81B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NYSE
+YOU,Clear Secure Inc,Common Stock,56.9,$7.64B,Information Technology,Software,Application Software,NYSE
+TTAN,ServiceTitan Inc,Common Stock,72.96,$7.58B,Information Technology,Software,Application Software,NASDAQ
+QRVO,Qorvo Inc,Common Stock,88.93,$7.56B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+RIOT,Riot Platforms Inc,Common Stock,21.49,$7.53B,Information Technology,Software,Application Software,NASDAQ
+SLAB,Silicon Laboratories Inc,Common Stock,217.4,$7.17B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+CORZ,Core Scientific Inc,Common Stock,24.01,$7.12B,Information Technology,Software,Application Software,NASDAQ
+PCOR,Procore Technologies Inc,Common Stock,44.32,$6.98B,Information Technology,Software,Application Software,NYSE
+AVT,Avnet Inc,Common Stock,89.85,$6.97B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NASDAQ
+CRUS,Cirrus Logic Inc.,Common Stock,139.42,$6.90B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+DBX,Dropbox Inc,Common Stock,29.42,$6.87B,Information Technology,Software,Application Software,NASDAQ
+CAMT,Camtek Ltd,Common Stock,156.15,$6.86B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+PLXS,Plexus Corp,Common Stock,260.66,$6.76B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Manufacturing Services,NASDAQ
+MXL,MaxLinear Inc,Common Stock,86.06,$6.72B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductors,NASDAQ
+IDCC,InterDigital Inc,Common Stock,264.37,$6.67B,Information Technology,Software,Application Software,NASDAQ
+S,SentinelOne Inc,Common Stock,18.81,$6.67B,Information Technology,Software,Systems Software,NYSE
+GDS,GDS Holdings Limited,Depository Receipt,32.78,$6.65B,Information Technology,IT Services,Internet Services & Infrastructure,NASDAQ
+INGM,Ingram Micro Holding Corp,Common Stock,29.45,$6.60B,Information Technology,"Electronic Equipment, Instruments & Components",Technology Distributors,NYSE
+ESTC,Elastic N.V.,Common Stock,60.18,$6.52B,Information Technology,Software,Application Software,NYSE
+APPF,AppFolio Inc,Common Stock,167.84,$6.33B,Information Technology,Software,Application Software,NASDAQ
+DSGX,Descartes Systems Group Inc (The),Common Stock,70.99,$6.31B,Information Technology,Software,Application Software,NASDAQ
+PATH,UiPath Inc,Common Stock,12.04,$6.30B,Information Technology,Software,Systems Software,NYSE
+QBTS,D-Wave Quantum Inc,Common Stock,17.8,$6.19B,Information Technology,Software,Application Software,NYSE
+CVLT,Commvault Systems Inc,Common Stock,146.49,$6.08B,Information Technology,Software,Systems Software,NASDAQ
+NICE,NICE Ltd,Depository Receipt,94.13,$5.94B,Information Technology,Software,Application Software,NASDAQ
+ACIW,ACI Worldwide Inc,Common Stock,56.69,$5.78B,Information Technology,Software,Application Software,NASDAQ
+GTLB,GitLab Inc,Common Stock,32.85,$5.75B,Information Technology,Software,Systems Software,NASDAQ
+VSH,Vishay Intertechnology Inc.,Common Stock,39.78,$5.73B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Components,NYSE
+DOX,Amdocs Ltd,Common Stock,51.61,$5.72B,Information Technology,IT Services,IT Consulting & Other Services,NASDAQ
+ACMR,ACM Research Inc,Common Stock,95.27,$5.70B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+OTEX,Open Text Corp,Common Stock,22.77,$5.66B,Information Technology,Software,Application Software,NASDAQ
+QLYS,Qualys Inc,Common Stock,143.78,$5.51B,Information Technology,Software,Systems Software,NASDAQ
+NTSK,Netskope Inc,Common Stock,13.33,$5.46B,Information Technology,Software,Systems Software,NASDAQ
+VRNS,Varonis Systems Inc,Common Stock,46.18,$5.45B,Information Technology,Software,Systems Software,NASDAQ
+KVYO,Klaviyo Inc,Common Stock,17.5,$5.43B,Information Technology,Software,Application Software,NYSE
+ZETA,Zeta Global Holdings Corp,Common Stock,21.19,$5.32B,Information Technology,Software,Application Software,NYSE
+PEGA,Pegasystems Inc,Common Stock,30.94,$5.30B,Information Technology,Software,Application Software,NASDAQ
+KLIC,Kulicke and Soffa Industries Inc,Common Stock,108.54,$5.24B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+ENPH,Enphase Energy Inc,Common Stock,39.94,$5.20B,Information Technology,Semiconductors & Semiconductor Equipment,Semiconductor Materials & Equipment,NASDAQ
+BB,BlackBerry Ltd,Common Stock,8.99,$5.18B,Information Technology,Software,Systems Software,NYSE
+NOVT,Novanta Inc,Common Stock,145.85,$5.11B,Information Technology,"Electronic Equipment, Instruments & Components",Electronic Equipment & Instruments,NASDAQ
