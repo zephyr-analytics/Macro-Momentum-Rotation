@@ -270,7 +270,7 @@ def fetch_closes(tickers: list) -> pd.DataFrame:
         print(f"  close chunk {i+1}/{len(chunks)}: "
               f"{chunk[:3]}{'…' if len(chunk)>3 else ''}")
         try:
-            raw = yf.download(chunk, period="5y", interval="1d",
+            raw = yf.download(chunk, period="20y", interval="1d",
                               auto_adjust=True, progress=False,
                               group_by="ticker")
             if raw is None or raw.empty:
