@@ -16,3 +16,43 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 TypeError: plotly.graph_objs._figure.Figure.update_layout() got multiple values for keyword argument 'margin'
 
+
+[ERROR] load_universe_yf sector=Industrials
+Traceback (most recent call last):
+  File "c:\Users\monic\Actual_Drive_Storage\Macro-Momentum-Rotation\Stock Dashboard\dashboard.py", line 285, in load_universe_yf
+    res = yf.screen(query, sortField="intradaymarketcap",
+                    sortAsc=False, size=top_n)
+  File "C:\Users\monic\AppData\Local\Programs\Python\Python314\Lib\site-packages\yfinance\screener\screener.py", line 206, in screen
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\monic\AppData\Local\Programs\Python\Python314\Lib\site-packages\curl_cffi\requests\models.py", line 167, in raise_for_status
+    raise HTTPError(f"HTTP Error {self.status_code}: {self.reason}", 0, self)
+curl_cffi.requests.exceptions.HTTPError: HTTP Error 401: 
+
+
+[ERROR] load_universe_yf sector=Utilities
+Traceback (most recent call last):
+  File "c:\Users\monic\Actual_Drive_Storage\Macro-Momentum-Rotation\Stock Dashboard\dashboard.py", line 285, in load_universe_yf
+    res = yf.screen(query, sortField="intradaymarketcap",
+                    sortAsc=False, size=top_n)
+  File "C:\Users\monic\AppData\Local\Programs\Python\Python314\Lib\site-packages\yfinance\screener\screener.py", line 206, in screen
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\monic\AppData\Local\Programs\Python\Python314\Lib\site-packages\curl_cffi\requests\models.py", line 167, in raise_for_status
+    raise HTTPError(f"HTTP Error {self.status_code}: {self.reason}", 0, self)
+curl_cffi.requests.exceptions.HTTPError: HTTP Error 401: 
+
+
+[ERROR] fetch_closes chunk 4
+Traceback (most recent call last):
+  File "c:\Users\monic\Actual_Drive_Storage\Macro-Momentum-Rotation\Stock Dashboard\dashboard.py", line 385, in fetch_closes
+    raw = yf.download(chunk, period="20y", interval="1d",
+                      auto_adjust=True, progress=False,
+                      group_by="ticker")
+  File "C:\Users\monic\AppData\Local\Programs\Python\Python314\Lib\site-packages\yfinance\utils.py", line 99, in wrapper
+    result = func(*args, **kwargs)
+  File "C:\Users\monic\AppData\Local\Programs\Python\Python314\Lib\site-packages\yfinance\multi.py", line 212, in download
+    for tkr in shared._DFS.keys():
+               ~~~~~~~~~~~~~~~~^^
+RuntimeError: dictionary changed size during iteration
+

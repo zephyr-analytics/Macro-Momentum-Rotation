@@ -52,6 +52,20 @@ the QC algorithm's logic as closely as possible. Key design decisions:
 8.  Top-N used for the historical band_hist ranking pass is the SAME top_n
     value used for live portfolio construction (both trace back to QC's
     single self.stock_count parameter), so the two stay consistent.
+
+9.  Position count is NOT fixed at top_n. QC's `top` list (the top-N
+    momentum-ranked, ADX/EMA-filtered candidates) can contain a symbol
+    whose sizing `scale` comes out to 0.0 (already at or above its
+    historical band ceiling). QC still runs that symbol through the
+    weighting math, but `SetHoldings` only receives a `PortfolioTarget`
+    for symbols whose final weight is > 0 — so the number of names QC
+    actually invests in in a given month can be LESS than `stock_count`,
+    even when `stock_count` eligible candidates were found. This
+    dashboard mirrors that: `run_portfolio()` returns both `positions`
+    (the up-to-top_n candidate set, matching QC's `top`) and `held`
+    (the subset with final weight > 0, matching what QC's SetHoldings
+    actually invests in) — the UI reports/plots `held`, not `positions`,
+    wherever it's describing the live portfolio.
 """
 
 import glob, os, re, time, traceback, warnings
@@ -206,6 +220,104 @@ def load_universe(top_n: int = TOP_PER_FILE):
 
     log.append(f"  -> {len(top)} tickers in universe (top {top_n}/sector, deduped)")
     return top, log
+
+
+# Yahoo's 11 screener sector buckets (from yfinance's EquityQuery 'sector' field).
+# These are a fixed vocabulary on Yahoo's side, not Morningstar sector codes, so
+# they won't line up 1:1 with the QC algorithm's morningstar_sector_code buckets
+# used in SectorTopUniverse — close in spirit (same GICS-style grouping) but not
+# guaranteed identical membership per sector.
+YF_SECTORS = [
+    "Basic Materials", "Communication Services", "Consumer Cyclical",
+    "Consumer Defensive", "Energy", "Financial Services", "Healthcare",
+    "Industrials", "Real Estate", "Technology", "Utilities",
+]
+
+# Yahoo screener exchange codes approximating QC's ("NYS", "NAS", "ASE")
+# primary-exchange filter (NMS = Nasdaq Global Select, NYQ = NYSE, ASE = NYSE
+# American). Yahoo's internal exchange codes have changed before — if this
+# filters out everything (or nothing), check yfinance's EquityQuery docs for
+# your installed version's valid 'exchange' values.
+YF_EXCHANGES = ["NMS", "NYQ", "ASE"]
+
+
+def load_universe_yf(top_n: int = TOP_PER_FILE,
+                      min_mktcap: float = 5_000_000_000,
+                      min_price: float = 5.0):
+    """
+    Builds the same (ticker, company, sector, industry, sub_industry,
+    exchange, mktcap) DataFrame as load_universe(), pulled live from
+    Yahoo's screener via yfinance's EquityQuery + yf.screen() instead of
+    the Excel/CSV files in stock_files/.
+
+    For each of Yahoo's 11 sector buckets, runs one screener query for
+    market cap >= min_mktcap, price >= min_price, exchange in YF_EXCHANGES
+    (mirroring QC's SectorTopUniverse filters), sorted by market cap
+    descending, capped at top_n results per sector.
+
+    CAVEATS (read before trusting this over the Excel files):
+      - Field names ('intradaymarketcap', 'eodprice', 'sector', 'exchange')
+        come from Yahoo's internal, unofficial screener schema exposed via
+        yfinance.EquityQuery. These have changed across yfinance versions
+        before and aren't guaranteed stable — if a sector comes back empty
+        while you know it shouldn't be, that's the first thing to check
+        (e.g. via yfinance's EquityQuery reference docs for your installed
+        version, or by trying the query with an obviously-broad filter).
+      - Yahoo's screener API caps a single query's results (historically
+        around 250) regardless of the `size` you ask for — keep top_n
+        comfortably under that per sector, which the existing 10-100 slider
+        range already does.
+      - This is a best-effort replacement, not a verified drop-in — spot
+        check a sector or two against the Excel-based universe before
+        relying on it for anything you'd trade on.
+    """
+    frames = []
+    log = []
+
+    for sector in YF_SECTORS:
+        query = yf.EquityQuery("and", [
+            yf.EquityQuery("eq",    ["sector", sector]),
+            yf.EquityQuery("is-in", ["exchange", *YF_EXCHANGES]),
+            yf.EquityQuery("gt",    ["intradaymarketcap", min_mktcap]),
+            yf.EquityQuery("gt",    ["eodprice", min_price]),
+        ])
+        try:
+            res = yf.screen(query, sortField="intradaymarketcap",
+                            sortAsc=False, size=top_n)
+        except Exception as e:
+            log_error(f"load_universe_yf sector={sector}", e)
+            log.append(f"  x  {sector}: screener error — {e}")
+            continue
+
+        quotes = (res or {}).get("quotes", [])
+        for q in quotes:
+            frames.append(dict(
+                ticker=q.get("symbol", ""),
+                company=q.get("longName") or q.get("shortName") or "",
+                sector=sector,
+                industry=q.get("industry", "") or "",
+                sub_industry="",
+                exchange=q.get("fullExchangeName") or q.get("exchange", ""),
+                mktcap=q.get("marketCap") or q.get("intradaymarketcap") or 0,
+            ))
+        log.append(f"  {sector}  ({len(quotes)} tickers)")
+        time.sleep(SLEEP_S)  # be polite between sector queries
+
+    if not frames:
+        log.append("No results returned from yfinance screener — "
+                    "check field names against your yfinance version.")
+        return pd.DataFrame(), log
+
+    df = pd.DataFrame(frames)
+    df = df[df["ticker"] != ""]
+    df["mktcap"] = pd.to_numeric(df["mktcap"], errors="coerce").fillna(0)
+    df = (df[df["mktcap"] > 0]
+          .sort_values("mktcap", ascending=False)
+          .drop_duplicates(subset="ticker")
+          .reset_index(drop=True))
+
+    log.append(f"  -> {len(df)} tickers in universe (top {top_n}/sector via yfinance screener)")
+    return df, log
 
 
 # ── yfinance MultiIndex helper ─────────────────────────────────────────────────
@@ -847,6 +959,22 @@ def run_portfolio(results: list, breadth_df: pd.DataFrame,
 
     Regime comes from the last row of breadth_df (current state).
     "recovery" regime allows trading (QC resets ceilings but still invests).
+
+    Returns both `positions` and `held`, which are NOT the same thing:
+
+      positions : up to `top_n` momentum-ranked, ADX/EMA-filtered candidates
+                  (QC: the `top` list built in Rebalance). This can include
+                  a symbol whose sizing `scale` is 0.0 because it's already
+                  at/above its historical band ceiling.
+
+      held      : the subset of `positions` whose final weight is > 0 —
+                  i.e. what QC's `SetHoldings` actually invests in, since
+                  QC only appends a `PortfolioTarget` when `w > 0`. `held`
+                  can be smaller than `positions` (and smaller than
+                  `top_n`), even when `top_n` eligible candidates exist,
+                  whenever one or more of them scale to exactly 0. Anything
+                  in the UI describing "how many positions the portfolio
+                  holds" should use `held`, not `positions` or `top_n`.
     """
     if breadth_df.empty:
         all_idx     = [r["idx"] for r in results]
@@ -883,26 +1011,31 @@ def run_portfolio(results: list, breadth_df: pd.DataFrame,
     # which is not what QC does: QC keeps the high-momentum name in `top` and just
     # gives it a small/zero weight via scale. Ranking must use raw momentum only.
     eligible.sort(key=lambda r: r["mom"], reverse=True)
-    top = eligible[:top_n]
+    positions = eligible[:top_n]
 
-    if risk_off or not top:
+    if risk_off or not positions:
         return dict(risk_off=risk_off, regime=regime,
                     bottom_frac=bottom_frac, improvement=improvement,
                     max_stress=max_stress,
-                    positions=[], final_weights={}, all_results=results)
+                    positions=[], held=[], final_weights={}, all_results=results)
 
     # Proportional weights from momentum * scale
-    raw    = {r["ticker"]: r["mom"] * r["scale"] for r in top}
+    raw    = {r["ticker"]: r["mom"] * r["scale"] for r in positions}
     total  = sum(raw.values())
     # Cap each position at max_weight, then re-normalise — matches QC exactly
     capped = {t: min(max_weight, v / total) for t, v in raw.items()}
     cs     = sum(capped.values())
     final_w = {t: v / cs for t, v in capped.items()} if cs > 0 else {}
 
+    # Matches QC's `if w > 0: targets.append(PortfolioTarget(s, w))` — a
+    # candidate with scale == 0.0 (or whose raw contribution rounds to zero
+    # weight) never gets a target in QC, so it isn't actually held here either.
+    held = [r for r in positions if final_w.get(r["ticker"], 0.0) > 0]
+
     return dict(risk_off=False, regime=regime,
                 bottom_frac=bottom_frac, improvement=improvement,
                 max_stress=max_stress,
-                positions=top, final_weights=final_w, all_results=results)
+                positions=positions, held=held, final_weights=final_w, all_results=results)
 
 
 # ── UI helpers ─────────────────────────────────────────────────────────────────
@@ -986,20 +1119,25 @@ app    = dash.Dash(__name__, title="Momentum Dashboard",
                    suppress_callback_exceptions=True)
 server = app.server
 
-if UNIVERSE_DF.empty:
-    univ_block = html.Div(
-        f"No files found in stock_files/  (expected: {STOCK_FILES_DIR})",
-        style=dict(color=C["red"], fontSize="13px"),
-    )
-else:
-    n_sectors = UNIVERSE_DF["sector"].nunique()
-    n_tickers = len(UNIVERSE_DF)
-    univ_block = html.Div([
-        html.Div(f"{n_sectors} sector files  |  {n_tickers} tickers in universe",
+UNIVERSE_SOURCE = "excel"  # "excel" (stock_files/) or "yfinance" (screener) — updated by the Refresh button
+
+def make_universe_block(df: pd.DataFrame, source: str):
+    if df.empty:
+        return html.Div(
+            f"No universe loaded  (source: {source})",
+            style=dict(color=C["red"], fontSize="13px"),
+        )
+    n_sectors = df["sector"].nunique()
+    n_tickers = len(df)
+    src_label = "stock_files/" if source == "excel" else "yfinance screener"
+    return html.Div([
+        html.Div(f"{n_sectors} sectors  |  {n_tickers} tickers  |  source: {src_label}",
                  style=dict(color=C["green"], fontSize="13px", marginBottom="4px")),
-        html.Div("  ·  ".join(sorted(UNIVERSE_DF["sector"].unique())),
+        html.Div("  ·  ".join(sorted(df["sector"].unique())),
                  style=dict(fontSize="11px", color=C["muted"])),
     ])
+
+univ_block = make_universe_block(UNIVERSE_DF, UNIVERSE_SOURCE)
 
 def make_cache_block():
     cs = cache_status()
@@ -1036,10 +1174,18 @@ app.layout = html.Div(style=dict(
         html.Div([
 
             html.Div([
-                html.Div("Universe  (stock_files/)",
+                html.Div("Universe",
                          style=dict(fontSize="12px", color=C["muted"],
                                     marginBottom="8px", fontWeight="500")),
-                univ_block,
+                html.Div(id="universe-block", children=univ_block),
+                html.Div([
+                    btn("Reload from stock_files/", "reload-universe-excel-btn", C["muted"]),
+                    btn("Fetch from yfinance",       "reload-universe-yf-btn",    C["amber"]),
+                ], style=dict(display="flex", gap="10px",
+                              marginTop="10px", flexWrap="wrap")),
+                html.Div(id="universe-status",
+                         style=dict(fontSize="11px", color=C["muted"],
+                                    marginTop="6px", minHeight="18px")),
             ], style=dict(minWidth="300px", maxWidth="420px")),
 
             html.Div(style=dict(width="1px", background=C["border"],
@@ -1080,7 +1226,7 @@ app.layout = html.Div(style=dict(
                                                 always_visible=True)),
                     ], style=dict(minWidth="240px")),
                     html.Div([
-                        html.Div("Portfolio holdings",
+                        html.Div("Max candidates (stock_count)",
                                  style=dict(fontSize="11px", color=C["muted"],
                                             marginBottom="4px")),
                         dcc.Slider(id="top-n", min=3, max=20, step=1, value=10,
@@ -1124,6 +1270,40 @@ app.layout = html.Div(style=dict(
     dcc.Loading(id="loading-output", type="circle", color=C["blue"],
                 children=html.Div(id="dashboard-output")),
 ])
+
+
+# ── Callback: Reload universe (Excel or yfinance) ─────────────────────────────
+@app.callback(
+    Output("universe-block",  "children"),
+    Output("universe-status", "children"),
+    Input("reload-universe-excel-btn", "n_clicks"),
+    Input("reload-universe-yf-btn",    "n_clicks"),
+    State("top-per-file",              "value"),
+    prevent_initial_call=True,
+)
+def do_reload_universe(n_excel, n_yf, top_per_file):
+    global UNIVERSE_DF, UNIVERSE_SOURCE
+    trigger = dash.ctx.triggered_id  # Dash >= 2.4; this app already relies on
+                                      # allow_duplicate=True (Dash >= 2.9), so
+                                      # dash.ctx is available.
+    try:
+        if trigger == "reload-universe-yf-btn":
+            df, log = load_universe_yf(top_per_file or TOP_PER_FILE)
+            source = "yfinance"
+        else:
+            df, log = load_universe(top_per_file or TOP_PER_FILE)
+            source = "excel"
+
+        if df.empty:
+            msg = status_line(log[-1] if log else "No tickers returned.", C["red"])
+            return make_universe_block(UNIVERSE_DF, UNIVERSE_SOURCE), msg
+
+        UNIVERSE_DF, UNIVERSE_SOURCE = df, source
+        msg = status_line(f"Loaded {len(df)} tickers via {source}.", C["green"])
+        return make_universe_block(UNIVERSE_DF, UNIVERSE_SOURCE), msg
+    except Exception as e:
+        log_error("do_reload_universe", e)
+        return make_universe_block(UNIVERSE_DF, UNIVERSE_SOURCE), status_line(f"Error: {e}", C["red"])
 
 
 # ── Callback: Fetch Closes ─────────────────────────────────────────────────────
@@ -1320,6 +1500,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
     improve   = portfolio["improvement"]
     max_stress= portfolio["max_stress"]
     positions = portfolio["positions"]
+    held      = portfolio["held"]
     final_w   = portfolio["final_weights"]
     all_idx   = [r["idx"] for r in results]
 
@@ -1332,8 +1513,9 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
                     "Caution — elevated stress"                 if bf > 0.30         else
                     "Risk-On — fully invested")
 
-    avg_mom     = float(np.mean([r["mom"] for r in positions])) if positions else 0.0
-    exhausted_n = sum(1 for r in positions if r["exhausted"])
+    avg_mom     = float(np.mean([r["mom"] for r in held])) if held else 0.0
+    exhausted_n = sum(1 for r in held if r["exhausted"])
+    zeroed_n    = len(positions) - len(held)
 
     # ── Breadth history chart ──
     fig_breadth = go.Figure()
@@ -1417,8 +1599,8 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
                               font=dict(color=C["muted"], size=13))]))
 
     # ── Weight bar ──
-    if positions and not roff:
-        t_s   = sorted(final_w, key=final_w.get)
+    if held and not roff:
+        t_s   = sorted((t for t in final_w if final_w[t] > 0), key=final_w.get)
         w_s   = [round(final_w[t] * 100, 1) for t in t_s]
         ex    = {r["ticker"]: r["exhausted"] for r in results}
         col_w = [C["red"] if ex.get(t) else C["blue"] for t in t_s]
@@ -1457,7 +1639,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
         yaxis_title="# stocks"))
 
     # ── Momentum vs scale scatter ──
-    in_top = {r["ticker"] for r in positions}
+    in_held = {r["ticker"] for r in held}
     fig_s  = go.Figure(go.Scatter(
         x=[r["mom"] * 100 for r in results],
         y=[r["scale"] * 100 for r in results],
@@ -1466,9 +1648,9 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
         textposition="top center",
         textfont=dict(size=8, color=C["muted"]),
         marker=dict(
-            color=[C["green"] if r["ticker"] in in_top else C["muted"]
+            color=[C["green"] if r["ticker"] in in_held else C["muted"]
                    for r in results],
-            size=[10 if r["ticker"] in in_top else 5 for r in results],
+            size=[10 if r["ticker"] in in_held else 5 for r in results],
             opacity=0.85, line=dict(width=.5, color=C["border"])),
         customdata=[(r["ticker"], r.get("sector",""),
                      round(r["scale"]*100, 1)) for r in results],
@@ -1477,7 +1659,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
             "Momentum: %{x:.2f}%<br>Scale: %{customdata[2]:.1f}%<extra></extra>"),
     ))
     fig_s.update_layout(**layout(height=320,
-        title=dict(text="Momentum vs scale  (green = selected)",
+        title=dict(text="Momentum vs scale  (green = actually held; grey includes candidates scaled to zero)",
                    font=dict(size=13), x=0),
         xaxis_title="Momentum (%)", yaxis_title="Scale (%)",
         shapes=[dict(type="line", x0=0, x1=0, y0=0, y1=100,
@@ -1485,7 +1667,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
 
     # ── Sector donut ──
     sec_w: dict = {}
-    for r in positions:
+    for r in held:
         s = r.get("sector") or "Unknown"
         sec_w[s] = sec_w.get(s, 0) + final_w.get(r["ticker"], 0) * 100
     if sec_w:
@@ -1510,9 +1692,9 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
 
     # ── Band heatmap ──
     fig_heat = None
-    if positions:
+    if held:
         z_data, y_lab = [], []
-        for r in positions[:12]:
+        for r in held[:12]:
             h = r.get("band_idx_hist", [])
             if h:
                 z_data.append(h[-40:])
@@ -1613,7 +1795,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
     n_resets  = len(reset_dates)
     status_msg = (f"{len(results)} analysed  ·  "
                   f"{len(failed)} skipped  ·  "
-                  f"{len(positions)} positions  ·  "
+                  f"{len(held)} held ({len(positions)} candidates)  ·  "
                   f"{n_resets} ceiling reset(s)")
 
     return html.Div([
@@ -1652,15 +1834,19 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
             html.Div([
                 metric_box("Universe", str(len(results)), "tickers with history"),
                 metric_box("Sectors",  str(universe["sector"].nunique()), "loaded"),
-                metric_box("Positions",
-                           "0" if roff else str(len(positions)),
-                           f"of {top_n} target",
+                metric_box("Positions held",
+                           "0" if roff else str(len(held)),
+                           ("no candidates found" if roff else
+                            f"of {len(positions)} candidates (cap {top_n})"),
                            C["red"] if roff else None),
+                metric_box("Dropped at ceiling", "0" if roff else str(zeroed_n),
+                           "today's idx ties/exceeds its own high",
+                           C["amber"] if (not roff and zeroed_n > 0) else None),
                 metric_box("Avg momentum",
-                           f"{avg_mom*100:.1f}%", "5-period composite",
+                           f"{avg_mom*100:.1f}%", "5-period composite (held only)",
                            C["green"] if avg_mom > 0 else C["red"]),
                 metric_box("Exhaustion flags", str(exhausted_n),
-                           f"of {len(positions)} picks",
+                           f"of {len(held)} held",
                            C["red"] if exhausted_n > 0 else None),
                 metric_box("Breadth stress", f"{bf*100:.1f}%",
                            "bottom-band fraction",
@@ -1684,7 +1870,7 @@ def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
 
         flex_row(
             chart_card(fig_w,
-                       height=max(200, len(positions)*36+80) if positions else 150),
+                       height=max(200, len(held)*36+80) if held else 150),
             chart_card(fig_b, height=250),
         ),
         flex_row(
