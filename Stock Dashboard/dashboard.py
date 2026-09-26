@@ -1,76 +1,79 @@
 """
-Momentum & Historical Band Ceiling Dashboard
+Momentum & Historical Band Ceiling Dashboard  —  QC-faithful replay
 Plotly Dash + yfinance
+
+This dashboard no longer approximates StockOnlyMomentum with daily,
+per-ticker calculations. It REPLAYS the QC algorithm bar by bar from the
+algorithm's warm-up start, with the same state machine, the same update
+order, and the same arithmetic.
 
 Data flow
 ---------
-1. Sector Excel files in stock_files/ are read at startup to build the universe.
-2. "Fetch Closes"  pulls 5y daily Close for every ticker → saved to cache/closes.csv
-3. "Fetch OHLC"    pulls 60d daily OHLC  for every ticker → saved to cache/ohlc.csv
-4. "Run Analysis"  reads both cache files and runs the full algorithm.
+1. Sector Excel/CSV files in stock_files/ build the universe (SectorTopUniverse
+   filters applied: mcap >= $5B, NYSE/NASDAQ/AMEX, blacklist, top-N per sector).
+2. "Fetch Prices" pulls daily High/Low/Close/Adj Close/Dividends (unadjusted
+   for dividends, split-adjusted) from (algo start - 3y) to today, plus SPY
+   for the trading calendar  ->  cache/prices.pkl
+3. "Run Analysis" replays the algorithm and shows:
+     - CURRENT holdings  = targets from the last month-end Rebalance QC ran
+     - NEXT-REBALANCE PREVIEW = Rebalance() evaluated on a copy of the state
+       using data through the latest bar
+   and writes cache/rebalance_log.csv for line-by-line validation vs QC Debug.
 
-QC MATCHING NOTES
------------------
-This dashboard is designed to produce ongoing daily signals while matching
-the QC algorithm's logic as closely as possible. Key design decisions:
+Logic replicated exactly
+------------------------
+ * Indicator lifetimes: ma (EMA-189), ADX-14, stretch_ema, close_win and
+   stretch_max all start at the symbol's subscription start = warm-up start
+   (algo start - 300 bars) or its first bar if later.
+ * Lean EMA semantics (verified against Lean source): Current = 0 until n
+   samples, first value = SMA of the first n samples, then k = 2/(n+1).
+ * Lean ADX (verified against Lean source), including its seeding, +DM tie
+   rule, and "ADX = 50 when +DI + -DI == 0" behaviour.
+ * dev = np.std (population, ddof=0) of the last 189 closes INCLUDING the
+   current bar (close_win.Add runs before np.std in OnData).
+ * stretch_ema fed once per bar (stretch only) — confirmed to match QC output.
+ * Breadth: current_band_idx carried forward per symbol, fixed golden-ratio
+   bands, and _band_index's fall-through (price outside the ladder -> 11).
+ * Rebalance timing: month_end("SPY"), 120 min before close. With daily
+   bars the month-end bar has not arrived yet, so ALL Rebalance inputs
+   (breadth, History(), Securities[].Price, indicators) are as of the
+   PREVIOUS trading day's close.
+ * Regime state machine (allow_universe / was_risk_off / max_stress_level)
+   evaluated only on rebalance days, exactly as in Rebalance().
+ * `len(idxs) < 50` early return leaves holdings untouched.
+ * Momentum from a 253-bar History() window. In TotalReturn mode a History()
+   request accumulates dividends from the start of its own window.
+ * band_hist: RollingWindow(126) of MONTHLY entries, appended only for `top`
+   symbols with ready ma/stretch_ema and dev > 0, BEFORE historical_high is
+   taken (so a new high always scales to 0).
+ * ADX gate, EMA gate, raw-momentum ranking, scale, exhaustion override,
+   proportional weights, single-pass cap + renormalisation, w > 0 holdings.
+ * Holdings are frozen between rebalances (QC never trades intra-month).
 
-1.  band_hist (ceiling) update scope: QC only updates band_hist for the
-    `stock_count` (top-N by momentum) symbols that make it into the `top`
-    list each Rebalance — i.e. symbols that are above EMA, have positive
-    momentum, pass the ADX filter, AND rank in the top N by momentum that
-    period. This dashboard reproduces that scope with a proper universe-wide
-    cross-sectional ranking pass (see compute_band_hist_top_n) rather than
-    gating each ticker independently on above-EMA/momentum alone.
+Cannot be replicated from yfinance + static files (data, not logic)
+-------------------------------------------------------------------
+ * Point-in-time universe: QC re-selects daily from Morningstar fundamentals
+   (sector codes, market cap, price > $5 on that day). The files here are a
+   static, present-day snapshot (survivorship bias; sector taxonomy may be
+   GICS not Morningstar). Symbols leaving/re-entering QC's universe lose
+   their indicator state; here they never leave.
+ * Price vendor: QC (AlgoSeek/Morningstar factor files) vs Yahoo.
+ * TotalReturn dividends: reconstructed as split-adjusted close + cumulative
+   split-adjusted dividends from subscription start.
 
-    KNOWN DEVIATION: QC's ADX filter can't be applied retroactively across
-    the full 5-year band_hist build, because only a 60-day OHLC cache is
-    fetched (no multi-year daily High/Low history is stored). So the
-    historical band_hist construction matches QC on: above EMA, mom > 0,
-    and top-N-by-momentum ranking — but does NOT apply the ADX <= 35 gate
-    when building historical ceiling history. ADX IS applied correctly at
-    the live/current-bar level in run_portfolio(), since that only needs
-    today's ADX value, which the 60-day cache supports.
-
-2.  ceiling_reset_dates: QC resets band_hist on the month-end rebalance bar
-    where recovery is first detected. We map each recovery detection date
-    forward to the next month-end trading day to match this timing.
-
-3.  band_hist update frequency: kept daily (vs QC monthly) so the dashboard
-    provides ongoing intra-month signals. This is the only intentional
-    frequency deviation from QC — the eligibility/ranking scope itself now
-    matches QC's `for s in top` logic (modulo the ADX caveat above).
-
-4.  stretch_max: never reset (lifetime peak per symbol), matching QC exactly.
-
-5.  Exhaustion: uses stretch_ema (smoothed) as current value vs stretch_max
-    (raw instantaneous peak), matching QC exactly.
-
-6.  Sizing bands: dynamic lm-based multipliers, matching QC Rebalance exactly.
-
-7.  Breadth bands: fixed golden-ratio multipliers, matching QC OnData exactly.
-
-8.  Top-N used for the historical band_hist ranking pass is the SAME top_n
-    value used for live portfolio construction (both trace back to QC's
-    single self.stock_count parameter), so the two stay consistent.
-
-9.  Position count is NOT fixed at top_n. QC's `top` list (the top-N
-    momentum-ranked, ADX/EMA-filtered candidates) can contain a symbol
-    whose sizing `scale` comes out to 0.0 (already at or above its
-    historical band ceiling). QC still runs that symbol through the
-    weighting math, but `SetHoldings` only receives a `PortfolioTarget`
-    for symbols whose final weight is > 0 — so the number of names QC
-    actually invests in in a given month can be LESS than `stock_count`,
-    even when `stock_count` eligible candidates were found. This
-    dashboard mirrors that: `run_portfolio()` returns both `positions`
-    (the up-to-top_n candidate set, matching QC's `top`) and `held`
-    (the subset with final weight > 0, matching what QC's SetHoldings
-    actually invests in) — the UI reports/plots `held`, not `positions`,
-    wherever it's describing the live portfolio.
+Optional: stretch_ema double-feed
+---------------------------------
+Reading Lean's source, self.EMA(symbol, ...) registers the indicator for
+automatic close updates, so the manual .Update(self.Time, stretch) in OnData
+would give it two inputs per bar. Comparing against QC backtest output showed
+QC does NOT behave that way, so this is OFF by default. The checkbox is kept
+only for experiments.
 """
 
-import glob, os, re, time, traceback, warnings
+import copy, glob, json, os, re, time, traceback, warnings
 warnings.filterwarnings("ignore")
 from collections import deque
+from typing import Optional
 
 import dash
 from dash import dcc, html, dash_table, Input, Output, State
@@ -78,27 +81,54 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import yfinance as yf
-from typing import Optional
+from numpy.lib.stride_tricks import sliding_window_view
+from pandas.tseries.holiday import USFederalHolidayCalendar
+from pandas.tseries.offsets import CustomBusinessDay
 
-# ── Constants ─────────────────────────────────────────────────────────────────
-LOOKBACKS     = [21, 63, 126, 189, 252]
-BAND_LEN      = 189
-HIST_LEN      = 126
-BOTTOM_LEVELS = {0, 1, 2, 3, 4}
-ADX_PERIOD    = 14
-ADX_LIMIT     = 35
-TOP_PER_FILE  = 100
-CHUNK_SIZE    = 50
-SLEEP_S       = 2.0
+# ── QC parameters (mirror StockOnlyMomentum.Initialize) ───────────────────────
+LOOKBACKS          = [21, 63, 126, 189, 252]
+STOCK_COUNT        = 10
+MAX_WEIGHT         = 0.20
+BAND_LEN           = 189
+HIST_LEN           = 126
+ADX_PERIOD         = 14
+ADX_LIMIT          = 35
+WARMUP_BARS        = 300
+BOTTOM_LEVELS      = {0, 1, 2, 3, 4}
+BREADTH_FRACTIONS  = [1.618, 1.382, 1.0, 0.809, 0.5, 0.382]
+CEILING_FRACTIONS  = [1.618, 1.382, 1.0, 0.75, 0.5, 0.190983]
+MIN_BREADTH_SAMPLE = 50
+RISK_OFF_FRAC      = 0.45
+RECOVERY_IMPROVE   = 0.60
+RECOVERY_FLOOR     = 0.15
+STRESS_DENOM_FLOOR = 0.10
+EXHAUST_IDX        = 10
+EXHAUST_DECAY      = 0.80
+
+# ── Universe parameters (mirror SectorTopUniverse) ────────────────────────────
+TOP_PER_SECTOR = 100
+MIN_MKTCAP     = 5_000_000_000
+MIN_PRICE      = 5.0
+BLACKLIST      = {"GME", "AMC"}
+
+# ── Replay / data parameters ──────────────────────────────────────────────────
+DEFAULT_ALGO_START = "2004-01-01"   # the commented-out SetStartDate in the algo
+CALENDAR_TICKER    = "SPY"          # DateRules.month_end("SPY")
+HISTORY_PAD_YEARS  = 3              # 300-bar warm-up + 253-bar History() window
+CHUNK_SIZE         = 50
+SLEEP_S            = 2.0
+PRICE_FIELDS       = ("High", "Low", "Close", "Adj Close", "Dividends")
 
 BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
 STOCK_FILES_DIR = os.path.join(BASE_DIR, "stock_files")
 CACHE_DIR       = os.path.join(BASE_DIR, "cache")
-CLOSES_CSV      = os.path.join(CACHE_DIR, "closes.csv")
-OHLC_CSV        = os.path.join(CACHE_DIR, "ohlc.csv")
+PRICES_PKL      = os.path.join(CACHE_DIR, "prices.pkl")
+PRICES_META     = os.path.join(CACHE_DIR, "prices_meta.json")
+REBAL_LOG_CSV   = os.path.join(CACHE_DIR, "rebalance_log.csv")
 ERROR_LOG       = os.path.join(CACHE_DIR, "errors.log")
 
 os.makedirs(CACHE_DIR, exist_ok=True)
+
 
 def log_error(context: str, exc: Exception) -> None:
     msg = f"\n[ERROR] {context}\n{traceback.format_exc()}\n"
@@ -108,6 +138,7 @@ def log_error(context: str, exc: Exception) -> None:
             f.write(msg)
     except Exception:
         pass
+
 
 # ── Colour palette ─────────────────────────────────────────────────────────────
 C = dict(
@@ -129,10 +160,14 @@ BASE_LAYOUT = dict(
                tickcolor=C["border"], zerolinecolor=C["border"]),
 )
 
+
 def layout(**overrides):
     return {**BASE_LAYOUT, **overrides}
 
-# ── Market cap parser ──────────────────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Universe (SectorTopUniverse equivalent, from static files)
+# ══════════════════════════════════════════════════════════════════════════════
 def parse_mktcap(val) -> float:
     if val is None:
         return 0.0
@@ -145,7 +180,19 @@ def parse_mktcap(val) -> float:
     except ValueError:
         return 0.0
 
-# ── Sector file reader ─────────────────────────────────────────────────────────
+
+def _exchange_ok(val) -> bool:
+    """QC: primary_exchange_id in ('NYS', 'NAS', 'ASE'). Unknown -> keep."""
+    s = str(val).strip().upper()
+    if not s or s == "NAN":
+        return True
+    if "ARCA" in s or "BATS" in s or "CBOE" in s or "OTC" in s:
+        return False
+    keys = ("NYSE", "NASDAQ", "AMEX", "NYS", "NAS", "ASE", "NMS",
+            "NGM", "NCM", "NGS", "NYQ", "AMERICAN", "MKT")
+    return any(k in s for k in keys)
+
+
 def read_sector_file(path: str) -> pd.DataFrame:
     filename = os.path.basename(path)
     try:
@@ -171,8 +218,10 @@ def read_sector_file(path: str) -> pd.DataFrame:
         print(f"  x  {filename}: no Symbol column")
         return pd.DataFrame()
 
-    df["ticker"] = df["ticker"].astype(str).str.strip().str.upper()
-    df = df[df["ticker"].str.match(r"^[A-Z]{1,6}$")].copy()
+    # Share classes (BRK.B, BF/B) are in QC's universe; yfinance wants BRK-B.
+    df["ticker"] = (df["ticker"].astype(str).str.strip().str.upper()
+                    .str.replace(r"[./]", "-", regex=True))
+    df = df[df["ticker"].str.match(r"^[A-Z]{1,6}(-[A-Z]{1,2})?$")].copy()
     df["mktcap"] = df["mktcap_raw"].apply(parse_mktcap) if "mktcap_raw" in df.columns else 0.0
 
     if "sector" not in df.columns or df["sector"].isna().all():
@@ -186,14 +235,13 @@ def read_sector_file(path: str) -> pd.DataFrame:
                "sub_industry", "exchange", "mktcap"]].copy()
 
 
-def load_universe(top_n: int = TOP_PER_FILE):
-    patterns = [os.path.join(STOCK_FILES_DIR, ext)
-                for ext in ("*.xlsx", "*.xls", "*.csv")]
+def load_universe(top_n: int = TOP_PER_SECTOR):
+    patterns = [os.path.join(STOCK_FILES_DIR, ext) for ext in ("*.xlsx", "*.xls", "*.csv")]
     paths = sorted(p for pat in patterns for p in glob.glob(pat))
 
     log = []
     if not paths:
-        log.append(f"No files found in stock_files/")
+        log.append("No files found in stock_files/")
         return pd.DataFrame(), log
 
     sector_dfs = []
@@ -209,7 +257,11 @@ def load_universe(top_n: int = TOP_PER_FILE):
         return pd.DataFrame(), log
 
     combined = pd.concat(sector_dfs, ignore_index=True)
-    combined = combined[combined["mktcap"] > 0]
+    n0 = len(combined)
+    # SectorTopUniverse filters (price > $5 is applied at run time on price data)
+    combined = combined[combined["mktcap"] >= MIN_MKTCAP]
+    combined = combined[~combined["ticker"].isin(BLACKLIST)]
+    combined = combined[combined["exchange"].apply(_exchange_ok)]
     top = (combined
            .sort_values("mktcap", ascending=False)
            .groupby("sector", group_keys=False)
@@ -218,120 +270,22 @@ def load_universe(top_n: int = TOP_PER_FILE):
            .drop_duplicates(subset="ticker")
            .reset_index(drop=True))
 
-    log.append(f"  -> {len(top)} tickers in universe (top {top_n}/sector, deduped)")
+    log.append(f"  -> {len(top)} tickers in universe (of {n0}; mcap >= $5B, "
+               f"NYSE/NASDAQ/AMEX, blacklist, top {top_n}/sector, deduped)")
     return top, log
 
 
-# Yahoo's 11 screener sector buckets (from yfinance's EquityQuery 'sector' field).
-# These are a fixed vocabulary on Yahoo's side, not Morningstar sector codes, so
-# they won't line up 1:1 with the QC algorithm's morningstar_sector_code buckets
-# used in SectorTopUniverse — close in spirit (same GICS-style grouping) but not
-# guaranteed identical membership per sector.
-YF_SECTORS = [
-    "Basic Materials", "Communication Services", "Consumer Cyclical",
-    "Consumer Defensive", "Energy", "Financial Services", "Healthcare",
-    "Industrials", "Real Estate", "Technology", "Utilities",
-]
-
-# Yahoo screener exchange codes approximating QC's ("NYS", "NAS", "ASE")
-# primary-exchange filter (NMS = Nasdaq Global Select, NYQ = NYSE, ASE = NYSE
-# American). Yahoo's internal exchange codes have changed before — if this
-# filters out everything (or nothing), check yfinance's EquityQuery docs for
-# your installed version's valid 'exchange' values.
-YF_EXCHANGES = ["NMS", "NYQ", "ASE"]
-
-
-def load_universe_yf(top_n: int = TOP_PER_FILE,
-                      min_mktcap: float = 5_000_000_000,
-                      min_price: float = 5.0):
-    """
-    Builds the same (ticker, company, sector, industry, sub_industry,
-    exchange, mktcap) DataFrame as load_universe(), pulled live from
-    Yahoo's screener via yfinance's EquityQuery + yf.screen() instead of
-    the Excel/CSV files in stock_files/.
-
-    For each of Yahoo's 11 sector buckets, runs one screener query for
-    market cap >= min_mktcap, price >= min_price, exchange in YF_EXCHANGES
-    (mirroring QC's SectorTopUniverse filters), sorted by market cap
-    descending, capped at top_n results per sector.
-
-    CAVEATS (read before trusting this over the Excel files):
-      - Field names ('intradaymarketcap', 'eodprice', 'sector', 'exchange')
-        come from Yahoo's internal, unofficial screener schema exposed via
-        yfinance.EquityQuery. These have changed across yfinance versions
-        before and aren't guaranteed stable — if a sector comes back empty
-        while you know it shouldn't be, that's the first thing to check
-        (e.g. via yfinance's EquityQuery reference docs for your installed
-        version, or by trying the query with an obviously-broad filter).
-      - Yahoo's screener API caps a single query's results (historically
-        around 250) regardless of the `size` you ask for — keep top_n
-        comfortably under that per sector, which the existing 10-100 slider
-        range already does.
-      - This is a best-effort replacement, not a verified drop-in — spot
-        check a sector or two against the Excel-based universe before
-        relying on it for anything you'd trade on.
-    """
-    frames = []
-    log = []
-
-    for sector in YF_SECTORS:
-        query = yf.EquityQuery("and", [
-            yf.EquityQuery("eq",    ["sector", sector]),
-            yf.EquityQuery("is-in", ["exchange", *YF_EXCHANGES]),
-            yf.EquityQuery("gt",    ["intradaymarketcap", min_mktcap]),
-            yf.EquityQuery("gt",    ["eodprice", min_price]),
-        ])
-        try:
-            res = yf.screen(query, sortField="intradaymarketcap",
-                            sortAsc=False, size=top_n)
-        except Exception as e:
-            log_error(f"load_universe_yf sector={sector}", e)
-            log.append(f"  x  {sector}: screener error — {e}")
-            continue
-
-        quotes = (res or {}).get("quotes", [])
-        for q in quotes:
-            frames.append(dict(
-                ticker=q.get("symbol", ""),
-                company=q.get("longName") or q.get("shortName") or "",
-                sector=sector,
-                industry=q.get("industry", "") or "",
-                sub_industry="",
-                exchange=q.get("fullExchangeName") or q.get("exchange", ""),
-                mktcap=q.get("marketCap") or q.get("intradaymarketcap") or 0,
-            ))
-        log.append(f"  {sector}  ({len(quotes)} tickers)")
-        time.sleep(SLEEP_S)  # be polite between sector queries
-
-    if not frames:
-        log.append("No results returned from yfinance screener — "
-                    "check field names against your yfinance version.")
-        return pd.DataFrame(), log
-
-    df = pd.DataFrame(frames)
-    df = df[df["ticker"] != ""]
-    df["mktcap"] = pd.to_numeric(df["mktcap"], errors="coerce").fillna(0)
-    df = (df[df["mktcap"] > 0]
-          .sort_values("mktcap", ascending=False)
-          .drop_duplicates(subset="ticker")
-          .reset_index(drop=True))
-
-    log.append(f"  -> {len(df)} tickers in universe (top {top_n}/sector via yfinance screener)")
-    return df, log
-
-
-# ── yfinance MultiIndex helper ─────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# yfinance fetch
+# ══════════════════════════════════════════════════════════════════════════════
 def _extract_field(raw: pd.DataFrame, ticker: str, field: str) -> Optional[pd.Series]:
     if raw is None or raw.empty:
         return None
-
     cols = raw.columns
-
     if isinstance(cols, pd.MultiIndex):
-        price_fields = {"Open", "High", "Low", "Close", "Volume",
-                        "open", "high", "low", "close", "volume"}
+        price_fields = {"Open", "High", "Low", "Close", "Adj Close", "Volume",
+                        "Dividends", "Stock Splits", "Capital Gains"}
         lvl0_is_price = any(str(v) in price_fields for v in cols.get_level_values(0))
-
         if lvl0_is_price:
             try:
                 return raw[field][ticker].dropna()
@@ -350,695 +304,590 @@ def _extract_field(raw: pd.DataFrame, ticker: str, field: str) -> Optional[pd.Se
                         return raw[t][field].dropna()
                     except KeyError:
                         pass
-
     if field in raw.columns:
         return raw[field].dropna()
-
     return None
 
 
-def _extract_ohlc(raw: pd.DataFrame, ticker: str) -> Optional[pd.DataFrame]:
-    result = {}
-    for f in ("High", "Low", "Close"):
-        s = _extract_field(raw, ticker, f)
-        if s is None:
-            return None
-        result[f] = s
+def _clean_index(s: pd.Series) -> pd.Series:
+    idx = pd.to_datetime(s.index)
+    if getattr(idx, "tz", None) is not None:
+        idx = idx.tz_localize(None)
+    s = s.copy()
+    s.index = idx.normalize()
+    return s[~s.index.duplicated(keep="last")]
+
+
+def fetch_prices(tickers: list, algo_start: str) -> dict:
+    start = (pd.Timestamp(algo_start)
+             - pd.DateOffset(years=HISTORY_PAD_YEARS)).strftime("%Y-%m-%d")
+    universe = [CALENDAR_TICKER] + [t for t in tickers if t != CALENDAR_TICKER]
+    print(f"\nFetching daily prices from {start} for {len(universe)} tickers "
+          f"in chunks of {CHUNK_SIZE} …")
+    chunks = [universe[i:i + CHUNK_SIZE] for i in range(0, len(universe), CHUNK_SIZE)]
+    cols = {f: {} for f in PRICE_FIELDS}
+
+    for i, chunk in enumerate(chunks):
+        print(f"  chunk {i+1}/{len(chunks)}: {chunk[:3]}{'…' if len(chunk) > 3 else ''}")
+        try:
+            raw = yf.download(chunk, start=start, interval="1d",
+                              auto_adjust=False, actions=True,
+                              progress=False, group_by="ticker")
+            if raw is None or raw.empty:
+                print("    no data returned")
+                continue
+            for t in chunk:
+                try:
+                    close = _extract_field(raw, t, "Close")
+                    if close is None or len(close) < 50:
+                        continue
+                    close = _clean_index(close)
+                    cols["Close"][t] = close
+                    for f in ("High", "Low", "Adj Close", "Dividends"):
+                        s = _extract_field(raw, t, f)
+                        if s is None:
+                            s = (pd.Series(0.0, index=close.index) if f == "Dividends"
+                                 else close.copy())
+                        cols[f][t] = _clean_index(s)
+                except Exception as e:
+                    print(f"    {t}: {e}")
+        except Exception as e:
+            log_error(f"fetch_prices chunk {i+1}", e)
+        if i < len(chunks) - 1:
+            time.sleep(SLEEP_S)
+
+    if not cols["Close"]:
+        print("  No price data collected — check errors.log")
+        return {}
+
+    fields = {f: pd.DataFrame(v).sort_index() for f, v in cols.items()}
+    payload = dict(fields=fields, start=start, algo_start=algo_start,
+                   fetched=str(pd.Timestamp.now()))
+    pd.to_pickle(payload, PRICES_PKL)
+    close = fields["Close"]
+    meta = dict(start=start, algo_start=algo_start,
+                first=str(close.index.min().date()), last=str(close.index.max().date()),
+                tickers=int(close.shape[1]), rows=int(close.shape[0]),
+                fetched=payload["fetched"][:16])
+    with open(PRICES_META, "w") as f:
+        json.dump(meta, f)
+    print(f"  Saved {close.shape[1]} tickers × {close.shape[0]} rows → {PRICES_PKL}")
+    return payload
+
+
+def load_prices_cache() -> Optional[dict]:
+    if not os.path.exists(PRICES_PKL):
+        return None
     try:
-        df = pd.DataFrame(result).dropna()
-        return df if not df.empty else None
+        return pd.read_pickle(PRICES_PKL)
+    except Exception as e:
+        log_error("load_prices_cache", e)
+        return None
+
+
+def cache_meta() -> Optional[dict]:
+    if not os.path.exists(PRICES_META):
+        return None
+    try:
+        with open(PRICES_META) as f:
+            return json.load(f)
     except Exception:
         return None
 
 
-# ── yfinance chunked fetch helpers ────────────────────────────────────────────
-def fetch_closes(tickers: list) -> pd.DataFrame:
-    print(f"\nFetching closes for {len(tickers)} tickers "
-          f"in chunks of {CHUNK_SIZE} …")
-    chunks = [tickers[i:i+CHUNK_SIZE] for i in range(0, len(tickers), CHUNK_SIZE)]
-    frames = []
-
-    for i, chunk in enumerate(chunks):
-        print(f"  close chunk {i+1}/{len(chunks)}: "
-              f"{chunk[:3]}{'…' if len(chunk)>3 else ''}")
-        try:
-            raw = yf.download(chunk, period="20y", interval="1d",
-                              auto_adjust=True, progress=False,
-                              group_by="ticker")
-            if raw is None or raw.empty:
-                print("    no data returned")
-                continue
-
-            print(f"    raw shape: {raw.shape}  "
-                  f"col levels: {raw.columns.nlevels}  "
-                  f"sample cols: {list(raw.columns[:6])}")
-
-            for t in chunk:
-                try:
-                    s = _extract_field(raw, t, "Close")
-                    if s is not None and len(s) > 50:
-                        frames.append(s.rename(t))
-                    elif s is None:
-                        print(f"    {t}: Close not found in result")
-                except Exception as e:
-                    print(f"    {t}: {e}")
-
-        except Exception as e:
-            log_error(f"fetch_closes chunk {i+1}", e)
-
-        if i < len(chunks) - 1:
-            time.sleep(SLEEP_S)
-
-    if not frames:
-        print("  No close data collected — check errors.log")
-        return pd.DataFrame()
-
-    df = pd.concat(frames, axis=1)
-    df.index = pd.to_datetime(df.index)
-    df.index.name = "Date"
-    df.to_csv(CLOSES_CSV)
-    print(f"  Saved {df.shape[1]} tickers × {df.shape[0]} rows → {CLOSES_CSV}")
-    return df
+# ══════════════════════════════════════════════════════════════════════════════
+# QC-equivalent primitives
+# ══════════════════════════════════════════════════════════════════════════════
+_BF = np.array(BREADTH_FRACTIONS, dtype=float)
 
 
-def fetch_ohlc(tickers: list) -> pd.DataFrame:
-    print(f"\nFetching OHLC (60d) for {len(tickers)} tickers "
-          f"in chunks of {CHUNK_SIZE} …")
-    chunks = [tickers[i:i+CHUNK_SIZE] for i in range(0, len(tickers), CHUNK_SIZE)]
-    frames = []
-
-    for i, chunk in enumerate(chunks):
-        print(f"  ohlc chunk {i+1}/{len(chunks)}: "
-              f"{chunk[:3]}{'…' if len(chunk)>3 else ''}")
-        try:
-            raw = yf.download(chunk, period="60d", interval="1d",
-                              auto_adjust=True, progress=False,
-                              group_by="ticker")
-            if raw is None or raw.empty:
-                print("    no data returned")
-                continue
-
-            for t in chunk:
-                try:
-                    sub = _extract_ohlc(raw, t)
-                    if sub is None or len(sub) < ADX_PERIOD * 2:
-                        continue
-                    sub = sub.copy()
-                    sub["Ticker"] = t
-                    frames.append(sub)
-                except Exception as e:
-                    print(f"    {t}: {e}")
-
-        except Exception as e:
-            log_error(f"fetch_ohlc chunk {i+1}", e)
-
-        if i < len(chunks) - 1:
-            time.sleep(SLEEP_S)
-
-    if not frames:
-        print("  No OHLC data collected — check errors.log")
-        return pd.DataFrame()
-
-    df = pd.concat(frames)
-    df.index.name = "Date"
-    df = df.reset_index()
-    df.to_csv(OHLC_CSV, index=False)
-    print(f"  Saved {df['Ticker'].nunique()} tickers → {OHLC_CSV}")
-    return df
+def _build_bands(mid, dev, unit=1.0, fractions=BREADTH_FRACTIONS):
+    """Identical arithmetic to StockOnlyMomentum._build_bands."""
+    lower = [mid - dev * unit * f for f in fractions]
+    upper = [mid + dev * unit * f for f in reversed(fractions)]
+    return lower + [mid] + upper
 
 
-# ── Cache readers ─────────────────────────────────────────────────────────────
-def load_closes_cache() -> pd.DataFrame:
-    if not os.path.exists(CLOSES_CSV):
-        return pd.DataFrame()
-    try:
-        df = pd.read_csv(CLOSES_CSV, index_col="Date", parse_dates=True)
-        print(f"  Closes cache: {df.shape[1]} tickers × {df.shape[0]} rows")
-        return df
-    except Exception as e:
-        log_error("load_closes_cache", e)
-        return pd.DataFrame()
-
-def load_ohlc_cache() -> pd.DataFrame:
-    if not os.path.exists(OHLC_CSV):
-        return pd.DataFrame()
-    try:
-        df = pd.read_csv(OHLC_CSV, parse_dates=["Date"])
-        print(f"  OHLC cache: {df['Ticker'].nunique()} tickers, "
-              f"{len(df)} rows")
-        return df
-    except Exception as e:
-        log_error("load_ohlc_cache", e)
-        return pd.DataFrame()
-
-def cache_status() -> dict:
-    def info(path):
-        if not os.path.exists(path):
-            return None, None
-        mtime = os.path.getmtime(path)
-        ts    = pd.Timestamp(mtime, unit="s").strftime("%Y-%m-%d %H:%M")
-        with open(path) as f:
-            rows = sum(1 for _ in f) - 1
-        return ts, rows
-    c_ts, c_rows = info(CLOSES_CSV)
-    o_ts, o_rows = info(OHLC_CSV)
-    return dict(closes_ts=c_ts, closes_rows=c_rows,
-                ohlc_ts=o_ts,   ohlc_rows=o_rows)
-
-
-# ── Quant helpers ──────────────────────────────────────────────────────────────
-def ema_series(arr: np.ndarray, period: int) -> np.ndarray:
-    k   = 2.0 / (period + 1)
-    out = np.empty(len(arr), dtype=float)
-    out[0] = float(arr[0])
-    for i in range(1, len(arr)):
-        out[i] = float(arr[i]) * k + out[i - 1] * (1 - k)
-    return out
-
-def band_index(price: float, bands: list) -> int:
+def _band_index(price, bands):
+    """Identical to StockOnlyMomentum._band_index (incl. fall-through -> 11)."""
     for i in range(len(bands) - 1):
         if bands[i] <= price < bands[i + 1]:
             return i
     return len(bands) - 2
 
-def compute_adx(hi: np.ndarray, lo: np.ndarray, cl: np.ndarray,
-                period: int = 14) -> float:
-    if len(cl) < period * 2:
-        return 0.0
-    tr, pdm, ndm = [], [], []
-    for i in range(1, len(cl)):
-        tr.append(max(hi[i]-lo[i], abs(hi[i]-cl[i-1]), abs(lo[i]-cl[i-1])))
-        up   = hi[i]   - hi[i-1]
-        down = lo[i-1] - lo[i]
-        pdm.append(up   if up > down and up > 0   else 0.0)
-        ndm.append(down if down > up and down > 0 else 0.0)
-    atr = ema_series(np.array(tr,  float), period)
-    pdi = 100.0 * ema_series(np.array(pdm, float), period) / (atr + 1e-9)
-    ndi = 100.0 * ema_series(np.array(ndm, float), period) / (atr + 1e-9)
-    dx  = 100.0 * np.abs(pdi - ndi) / (pdi + ndi + 1e-9)
-    return float(ema_series(dx, period)[-1])
 
-# Fixed QC-matching breadth band multipliers (from OnData)
-BREADTH_BANDS_MULT = [1.618, 1.382, 1.0, 0.809, 0.5, 0.382]
+class _LeanEMA:
+    """Port of Lean ExponentialMovingAverage: Current = 0 until `period`
+    samples, first ready value = SMA of the first `period` samples, then
+    x*k + prev*(1-k) with k = 2/(period+1)."""
+    __slots__ = ("p", "k", "n", "s", "v")
 
-def _breadth_band_index(price: float, mid: float, dev: float) -> int:
+    def __init__(self, period):
+        self.p = period; self.k = 2.0 / (period + 1)
+        self.n = 0; self.s = 0.0; self.v = 0.0
+
+    def update(self, x):
+        self.n += 1
+        if self.n <= self.p:
+            self.s += x
+        if self.n < self.p:
+            self.v = 0.0
+        elif self.n == self.p:
+            self.v = self.s / self.p
+        else:
+            self.v = x * self.k + self.v * (1.0 - self.k)
+        return self.v
+
+
+def _ticker_indicators(c: np.ndarray, quirk: bool) -> dict:
     """
-    Fixed golden-ratio multipliers — matches QC OnData exactly.
-    Used ONLY for breadth tracking, NOT for per-ticker sizing.
+    Replays OnData + the auto-updated indicators for ONE symbol from its
+    subscription start. Consolidator (auto) updates fire before OnData, so on
+    each bar: ma <- close; [quirk] stretch_ema <- close; then OnData:
+    close_win.Add, dev = np.std(close_win), stretch, stretch_ema <- stretch,
+    stretch_max, current_band_idx.
     """
-    bands = [
-        mid - dev * 1.618,
-        mid - dev * 1.382,
-        mid - dev * 1.0,
-        mid - dev * 0.809,
-        mid - dev * 0.5,
-        mid - dev * 0.382,
-        mid,
-        mid + dev * 0.382,
-        mid + dev * 0.5,
-        mid + dev * 0.809,
-        mid + dev * 1.0,
-        mid + dev * 1.382,
-        mid + dev * 1.618,
-    ]
-    return band_index(price, bands)
+    n = len(c)
+    dev = np.full(n, np.nan)
+    if n >= BAND_LEN:
+        # list(RollingWindow) is newest-first; keep that order for np.std
+        dev[BAND_LEN - 1:] = sliding_window_view(c, BAND_LEN)[:, ::-1].std(axis=1)
+
+    ma      = np.empty(n)
+    sema    = np.full(n, np.nan)
+    sema_n  = np.zeros(n, dtype=np.int64)
+    stretch = np.full(n, np.nan)
+
+    cl, dl = c.tolist(), dev.tolist()
+    e_ma, e_st = _LeanEMA(BAND_LEN), _LeanEMA(BAND_LEN)
+    for i in range(n):
+        x = cl[i]
+        m = e_ma.update(x)
+        ma[i] = m
+        if quirk:                                        # auto-feed of close
+            e_st.update(x)
+        if i >= BAND_LEN - 1:                            # close_win & ma ready
+            d = dl[i]
+            if d > 0:
+                st = abs(x - m) / d
+                stretch[i] = st
+                e_st.update(st)                          # manual stretch update
+        if e_st.n:
+            sema[i] = e_st.v
+        sema_n[i] = e_st.n
+
+    smax = np.maximum.accumulate(np.nan_to_num(stretch, nan=0.0))
+
+    # Breadth band index (fixed fractions, unit=1.0), carried forward
+    valid = ~np.isnan(stretch)
+    bidx = np.full(n, -1, dtype=np.int16)
+    if valid.any():
+        mv = ma[valid][:, None]
+        dv = dev[valid][:, None]
+        lower = mv - (dv * 1.0) * _BF[None, :]
+        upper = mv + (dv * 1.0) * _BF[::-1][None, :]
+        bands = np.hstack([lower, mv, upper])
+        pos = (bands <= c[valid][:, None]).sum(axis=1) - 1
+        pos = np.where((pos < 0) | (pos > 11), 11, pos)
+        tmp = np.full(n, np.nan)
+        tmp[valid] = pos
+        bidx = pd.Series(tmp).ffill().fillna(-1).to_numpy().astype(np.int16)
+
+    return dict(ma=ma, dev=dev, sema=sema, sema_n=sema_n, smax=smax, bidx=bidx)
 
 
-def _month_end_dates(dates: pd.DatetimeIndex) -> set:
+def _adx_series(h: np.ndarray, l: np.ndarray, c: np.ndarray, period: int = ADX_PERIOD):
     """
-    Return the set of dates that are the last trading day of their month.
-    Matches QC's DateRules.month_end("SPY") behaviour.
+    Line-for-line port of Lean AverageDirectionalIndex (Indicators/
+    AverageDirectionalIndex.cs + WilderMovingAverage.cs), from subscription start.
+      * bar 1: TR = +DM = -DM = 0 (no previous bar)
+      * +DM = H-pH if H > pH and H-pH >= pL-L ; -DM = pL-L if pL > L and pL-L > H-pH
+      * smoothed TR/DM: S = S + x - (S/period if samples > period+1 else 0)
+        -> plain sum over bars 1..period+1, Wilder afterwards; ready when samples > period
+      * +DI/-DI = 100*S_dm/S_tr once smoothed DM is ready and S_tr != 0, else 0
+      * if +DI + -DI == 0: ADX.Current = 50 and the Wilder average is NOT updated
+      * DX -> WilderMovingAverage(period): SMA while samples < period, then
+        dx/period + prev*(1-1/period) (the period-th sample already uses Wilder)
+      * IsReady = Wilder average has `period` samples
     """
-    s = pd.Series(dates, index=dates)
-    # Group by year-month, take the last date in each group
-    return set(s.groupby([s.dt.year, s.dt.month]).last())
-
-
-def compute_breadth_history(closes_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Replicates QC OnData breadth tracking bar-by-bar over the full close history.
-
-    Uses FIXED golden-ratio band multipliers (matching QC OnData), NOT the
-    dynamic lm-based sizing bands (which are only used in QC Rebalance).
-
-    Recovery reset dates are mapped to the next month-end trading day to
-    match QC's scheduled rebalance timing.
-
-    Returns a DataFrame indexed by Date with columns:
-        bottom_frac, regime ('risk_on' | 'risk_off' | 'recovery')
-        max_stress_level, improvement
-        reset_on_rebalance (bool — True on the month-end bar where ceilings reset)
-    """
-    closes = closes_df.dropna(axis=1, how="all")
-    dates  = closes.index
-
-    min_bars = BAND_LEN + 10
-
-    ema_df = closes.ewm(span=BAND_LEN, adjust=False).mean()
-    std_df = closes.rolling(BAND_LEN, min_periods=BAND_LEN).std()
-
-    month_ends = _month_end_dates(dates)
-
-    records = []
-
-    # Regime state — mirrors QC instance variables exactly
-    was_risk_off     = False
-    max_stress_level = 0.0
-    risk_off         = False
-
-    # Track pending reset: if recovery is detected on a daily bar, the actual
-    # ceiling reset fires on the next month-end rebalance (matching QC scheduling)
-    pending_reset    = False
-
-    for i, date in enumerate(dates):
-        if i < min_bars:
-            continue
-
-        row_close = closes.iloc[i]
-        row_ema   = ema_df.iloc[i]
-        row_std   = std_df.iloc[i]
-
-        band_idxs = []
-        for t in closes.columns:
-            c   = row_close[t]
-            mid = row_ema[t]
-            dev = row_std[t]
-            if pd.isna(c) or pd.isna(mid) or pd.isna(dev) or dev <= 0:
-                continue
-            band_idxs.append(_breadth_band_index(c, mid, dev))
-
-        if len(band_idxs) < 50:
-            continue
-
-        bottom_frac = sum(1 for idx in band_idxs if idx in BOTTOM_LEVELS) / len(band_idxs)
-        max_stress_level = max(max_stress_level, bottom_frac)
-
-        reset_fires_today = False
-
-        # ── Regime logic — matches QC Rebalance exactly ──
-        if bottom_frac >= 0.45:
-            risk_off     = True
-            was_risk_off = True
-            regime       = "risk_off"
-            improvement  = 0.0
-
-        elif was_risk_off:
-            denominator = max(max_stress_level, 0.10)
-            improvement = (max_stress_level - bottom_frac) / denominator
-
-            if improvement >= 0.60 or bottom_frac < 0.15:
-                # Recovery detected — in QC this fires inside Rebalance (month-end).
-                # We detect it daily but only fire the ceiling reset on the next
-                # month-end bar, matching QC's scheduler.
-                if date in month_ends:
-                    # We're on a month-end bar: reset fires now
-                    was_risk_off     = False
-                    risk_off         = False
-                    max_stress_level = 0.0
-                    regime           = "recovery"
-                    reset_fires_today = True
-                    pending_reset    = False
-                else:
-                    # Recovery condition met on intra-month bar — mark pending,
-                    # keep risk_off state until month-end rebalance
-                    pending_reset = True
-                    regime        = "risk_off"   # still risk-off until rebalance
-                    risk_off      = True
+    n = len(c)
+    out = np.full(n, np.nan)
+    ready = np.zeros(n, dtype=bool)
+    hl, ll, cl = h.tolist(), l.tolist(), c.tolist()
+    s_tr = s_p = s_m = 0.0
+    w_n = 0; w_sum = 0.0; w_v = 0.0; kw = 1.0 / period
+    cur = 0.0
+    for i in range(n):
+        samples = i + 1
+        if i == 0:
+            tr = pdm = mdm = 0.0
+        else:
+            H, L = hl[i], ll[i]
+            pH, pL, pC = hl[i - 1], ll[i - 1], cl[i - 1]
+            tr = max(H - L, abs(H - pC), abs(L - pC))
+            pdm = (H - pH) if (H > pH and H - pH >= pL - L) else 0.0
+            mdm = (pL - L) if (pL > L and pL - L > H - pH) else 0.0
+        dec = samples > period + 1
+        s_tr = s_tr + tr  - (s_tr / period if dec else 0.0)
+        s_p  = s_p  + pdm - (s_p  / period if dec else 0.0)
+        s_m  = s_m  + mdm - (s_m  / period if dec else 0.0)
+        sm_ready = samples > period
+        pdi = 100.0 * s_p / s_tr if (s_tr != 0 and sm_ready) else 0.0
+        ndi = 100.0 * s_m / s_tr if (s_tr != 0 and sm_ready) else 0.0
+        ssum = pdi + ndi
+        if ssum == 0:
+            cur = 50.0
+        else:
+            dx = 100.0 * abs(pdi - ndi) / ssum
+            w_n += 1
+            if w_n < period:
+                w_sum += dx
+                w_v = w_sum / w_n
             else:
-                regime   = "risk_off"
-                risk_off = True
-        else:
-            risk_off    = False
-            improvement = 0.0
-            regime      = "risk_on"
-
-        # Fire pending reset on next month-end bar
-        if pending_reset and date in month_ends and regime != "recovery":
-            was_risk_off     = False
-            risk_off         = False
-            max_stress_level = 0.0
-            regime           = "recovery"
-            reset_fires_today = True
-            pending_reset    = False
-            improvement      = (max_stress_level - bottom_frac) / max(max_stress_level, 0.10)
-
-        records.append(dict(
-            date=date,
-            bottom_frac=bottom_frac,
-            regime=regime,
-            max_stress_level=max_stress_level,
-            improvement=improvement,
-            reset_on_rebalance=reset_fires_today,
-        ))
-
-    if not records:
-        return pd.DataFrame()
-
-    df = pd.DataFrame(records).set_index("date")
-    return df
+                w_v = dx * kw + w_v * (1.0 - kw)
+            cur = w_v
+        out[i] = cur
+        ready[i] = w_n >= period
+    return out, ready
 
 
-# ── Per-ticker time series (Phase A) ──────────────────────────────────────────
-def compute_ticker_series(ticker: str, close_series: pd.Series) -> Optional[dict]:
-    """
-    Computes the full bar-by-bar time series needed for both the
-    universe-wide band_hist ranking pass and the final per-ticker metrics.
+# ══════════════════════════════════════════════════════════════════════════════
+# Panel build: per-symbol indicator replay + snapshots at rebalance inputs
+# ══════════════════════════════════════════════════════════════════════════════
+def build_panel(prices: dict, tickers: list, algo_start: str,
+                total_return: bool, quirk: bool) -> dict:
+    F = prices["fields"]
+    close_df = F["Close"]
+    notes = []
 
-    This matches QC's OnData + the sizing-band portion of Rebalance exactly:
-      - ema (band_len EMA of close)
-      - dev (rolling std over band_len)
-      - stretch = abs(close - mid) / dev            (raw instantaneous)
-      - stretch_ema = EMA of stretch                 (QC: self.stretch_ema[s])
-      - stretch_max = running all-time peak of stretch, never reset
-                                                       (QC: self.stretch_max[s])
-      - sizing-band index using the CURRENT stretch_ema at that bar
-                                                       (QC: bands built each bar
-                                                        in OnData use the live
-                                                        stretch_ema value)
-      - composite momentum over LOOKBACKS
-      - above_ema flag
+    if CALENDAR_TICKER in close_df.columns and close_df[CALENDAR_TICKER].notna().sum() > 0:
+        cal = close_df[CALENDAR_TICKER].dropna().index
+    else:
+        cal = close_df.dropna(how="all").index
+        notes.append("SPY missing from cache — calendar built from union of tickers.")
+    cal = pd.DatetimeIndex(sorted(set(cal)))
+    T = len(cal)
 
-    Returns None if there isn't enough history.
-    """
-    closes = close_series.dropna()
-    dates  = closes.index
-    vals   = closes.values.astype(float)
-    n      = len(vals)
+    tickers = [t for t in dict.fromkeys(tickers)
+               if t in close_df.columns and t != CALENDAR_TICKER]
+    last_raw = close_df[tickers].ffill().iloc[-1]
+    dropped_px = [t for t in tickers if not (last_raw.get(t, np.nan) > MIN_PRICE)]
+    if dropped_px:
+        notes.append(f"{len(dropped_px)} ticker(s) dropped for price <= ${MIN_PRICE:.0f}.")
+    tickers = [t for t in tickers if t not in set(dropped_px)]
+    N = len(tickers)
 
-    if n < max(LOOKBACKS) + BAND_LEN + 10:
-        return None
+    def mat(name):
+        df = F.get(name)
+        if df is None:
+            return None
+        return df.reindex(index=cal, columns=tickers).to_numpy(dtype=float)
 
-    ema_arr = ema_series(vals, BAND_LEN)
-    ema_k   = 2.0 / (BAND_LEN + 1)
-    max_lb  = max(LOOKBACKS)
+    Cx = mat("Close"); Hx = mat("High"); Lx = mat("Low")
+    Ax = mat("Adj Close"); Dx = mat("Dividends")
+    if Ax is None: Ax = Cx.copy()
+    if Dx is None: Dx = np.zeros_like(Cx)
+    Dx = np.nan_to_num(Dx, nan=0.0)
 
-    out_dates, out_idx, out_mom = [], [], []
-    out_above_ema, out_stretch_ema, out_stretch_max = [], [], []
-    out_dev, out_mid, out_close = [], [], []
+    missing = np.isnan(Cx)
+    first = np.full(N, -1, dtype=np.int64)
+    last  = np.full(N, -1, dtype=np.int64)
+    for j in range(N):
+        v = np.flatnonzero(~missing[:, j])
+        if len(v):
+            first[j], last[j] = v[0], v[-1]
 
-    stretch_ema_val: Optional[float] = None
-    peak_stretch = 0.0
+    rows = np.arange(T)[:, None]
+    live = (first[None, :] >= 0) & (rows >= first[None, :]) & (rows <= last[None, :])
+    # Lean fill-forward bars inside the live range: O = H = L = C = prior close
+    Cff = pd.DataFrame(Cx).ffill().to_numpy()
+    Aff = pd.DataFrame(Ax).ffill().to_numpy()
+    ffbar = live & missing
+    Cx = np.where(live, Cff, np.nan)
+    Ax = np.where(live, Aff, np.nan)
+    Hx = np.where(ffbar | np.isnan(Hx), Cx, Hx); Hx = np.where(live, Hx, np.nan)
+    Lx = np.where(ffbar | np.isnan(Lx), Cx, Lx); Lx = np.where(live, Lx, np.nan)
+    Dx = np.where(live & ~missing, Dx, 0.0)
 
-    for i in range(BAND_LEN, n):
-        window = vals[i - BAND_LEN: i]
-        dev = float(np.std(window))
-        if dev <= 0:
+    start_idx = int(cal.searchsorted(pd.Timestamp(algo_start)))
+    if start_idx >= T:
+        raise ValueError(f"Algo start {algo_start} is after the last cached bar.")
+    warm_needed = start_idx - WARMUP_BARS
+    warm_idx = max(0, warm_needed)
+    if warm_needed < 0:
+        notes.append(f"Price cache starts {-warm_needed} bars too late for the full "
+                     f"300-bar warm-up — re-fetch with this algo start date.")
+    fstart = np.maximum(first, warm_idx)
+
+    # Month-end rebalance days (DateRules.month_end("SPY"))
+    ym = cal.year.values * 12 + cal.month.values
+    is_me = np.zeros(T, dtype=bool)
+    is_me[:-1] = ym[1:] != ym[:-1]
+    nxt = cal[-1] + CustomBusinessDay(calendar=USFederalHolidayCalendar())
+    is_me[-1] = nxt.month != cal[-1].month
+    reb_pos = [int(p) for p in np.flatnonzero(is_me) if p >= start_idx and p >= 1]
+
+    snap_t = sorted(set([p - 1 for p in reb_pos] + [T - 1]))
+    row_of = {t: r for r, t in enumerate(snap_t)}
+    R = len(snap_t)
+    snap_arr = np.array(snap_t)
+
+    # Momentum snapshots (History(symbols, 253, Daily) ending at t)
+    if total_return:
+        CS = np.cumsum(Dx, axis=0)
+        Cm = Cx
+    else:
+        CS = np.zeros_like(Cx)
+        Cm = Ax
+    max_lb = max(LOOKBACKS)
+    MOM = np.full((R, N), np.nan)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        for r, t in enumerate(snap_t):
+            t0 = t - max_lb
+            if t0 < 0:
+                continue
+            base = CS[t0]
+            pt = Cm[t] + (CS[t] - base)
+            rets = [pt / (Cm[t - lb] + (CS[t - lb] - base)) - 1 for lb in LOOKBACKS]
+            MOM[r] = np.mean(rets, axis=0)
+
+    snap = {k: np.full((R, N), np.nan) for k in ("price", "ma", "dev", "sema", "smax", "adx")}
+    snapb = {k: np.zeros((R, N), dtype=bool)
+             for k in ("fed", "ma_ready", "sema_ready", "adx_ready")}
+    BIDX = np.full((T, N), -1, dtype=np.int16)
+
+    t_start = time.time()
+    for j in range(N):
+        f, e = int(fstart[j]), int(last[j])
+        if first[j] < 0 or f > e:
             continue
-
-        mid   = float(ema_arr[i])
-        close = float(vals[i])
-
-        stretch = abs(close - mid) / dev
-        if stretch > peak_stretch:
-            peak_stretch = stretch
-
-        if stretch_ema_val is None:
-            stretch_ema_val = stretch
+        seg = slice(f, e + 1)
+        if total_return:
+            off = CS[seg, j] - CS[f, j]
+            c = Cx[seg, j] + off; h = Hx[seg, j] + off; l = Lx[seg, j] + off
         else:
-            stretch_ema_val = stretch * ema_k + stretch_ema_val * (1 - ema_k)
+            ratio = Ax[seg, j] / Cx[seg, j]
+            c = Ax[seg, j]; h = Hx[seg, j] * ratio; l = Lx[seg, j] * ratio
 
-        lm  = stretch_ema_val
-        lm2 = lm / 2.0
-        lm3 = lm2 * 0.38196601
-        lm4 = lm * 1.38196601
-        lm5 = lm * 1.61803399
-        lm6 = (lm + lm2) / 2.0
-        sizing_bands = [
-            mid-dev*lm5, mid-dev*lm4, mid-dev*lm,  mid-dev*lm6,
-            mid-dev*lm2, mid-dev*lm3, mid,
-            mid+dev*lm3, mid+dev*lm2, mid+dev*lm6,
-            mid+dev*lm,  mid+dev*lm4, mid+dev*lm5,
-        ]
-        idx = band_index(close, sizing_bands)
+        ind = _ticker_indicators(c, quirk)
+        adx, adx_rdy = _adx_series(h, l, c)
+        BIDX[seg, j] = ind["bidx"]
 
-        above_ema = close > mid
-        mom_val = np.nan
-        if i >= max_lb:
-            mom_val = float(np.mean([
-                vals[i] / vals[i - lb] - 1
-                for lb in LOOKBACKS if i >= lb
-            ]))
+        m = (snap_arr >= f) & (snap_arr <= e)
+        if m.any():
+            rr = np.flatnonzero(m)
+            li = snap_arr[m] - f
+            snap["price"][rr, j] = c[li]
+            snap["ma"][rr, j]    = ind["ma"][li]
+            snap["dev"][rr, j]   = ind["dev"][li]
+            snap["sema"][rr, j]  = ind["sema"][li]
+            snap["smax"][rr, j]  = ind["smax"][li]
+            snap["adx"][rr, j]   = adx[li]
+            snapb["fed"][rr, j]        = True
+            snapb["ma_ready"][rr, j]   = (li + 1) >= BAND_LEN
+            snapb["sema_ready"][rr, j] = ind["sema_n"][li] >= BAND_LEN
+            snapb["adx_ready"][rr, j]  = adx_rdy[li]
+        if (j + 1) % 100 == 0:
+            print(f"    indicators {j+1}/{N}  ({time.time() - t_start:.0f}s)")
 
-        out_dates.append(dates[i])
-        out_idx.append(idx)
-        out_mom.append(mom_val)
-        out_above_ema.append(above_ema)
-        out_stretch_ema.append(stretch_ema_val)
-        out_stretch_max.append(peak_stretch)
-        out_dev.append(dev)
-        out_mid.append(mid)
-        out_close.append(close)
-
-    if not out_dates:
-        return None
-
-    return dict(
-        ticker=ticker,
-        dates=out_dates,
-        idx=out_idx,
-        mom=out_mom,
-        above_ema=out_above_ema,
-        stretch_ema=out_stretch_ema,
-        stretch_max=out_stretch_max,
-        dev=out_dev,
-        mid=out_mid,
-        close=out_close,
-    )
+    return dict(cal=cal, tickers=tickers, T=T, N=N, start_idx=start_idx,
+                warm_idx=warm_idx, reb_pos=reb_pos, row_of=row_of, snap_t=snap_t,
+                MOM=MOM, snap=snap, snapb=snapb, BIDX=BIDX, notes=notes)
 
 
-# ── Universe-wide top-N band_hist ranking pass (Phase B) ──────────────────────
-def compute_band_hist_top_n(series_map: dict, ceiling_reset_dates: list,
-                             stock_count: int, breadth_regime: dict = None) -> dict:
-    """
-    Matches QC's `for s in top` band_hist update scope exactly (modulo the
-    ADX caveat documented at the top of this file):
+# ══════════════════════════════════════════════════════════════════════════════
+# Rebalance() — line-for-line port
+# ══════════════════════════════════════════════════════════════════════════════
+def qc_rebalance(state: dict, panel: dict, t: int,
+                 stock_count: int, max_weight: float) -> dict:
+    tickers = panel["tickers"]
+    r = panel["row_of"][t]
+    snap, snapb = panel["snap"], panel["snapb"]
+    rec = dict(status="", regime="", bottom_frac=np.nan, n_breadth=0,
+               max_stress=np.nan, improvement=np.nan, reset=False,
+               candidates=[], final_weights={}, holdings={})
 
-      - eligible on a given bar only if above_ema AND mom > 0
-      - ranked by momentum, descending
-      - only the top `stock_count` (QC: self.stock_count) get their band
-        index appended to band_hist that bar — everyone else is skipped,
-        exactly as in QC where only symbols in `top` reach the band_hist
-        Add() call inside Rebalance.
+    # -------- UNIVERSE-WIDE BREADTH --------
+    b = panel["BIDX"][t]
+    vals = b[b >= 0]
+    n = len(vals)
+    rec["n_breadth"] = n
+    if n < MIN_BREADTH_SAMPLE:
+        rec["status"] = "breadth<50 (return)"
+        rec["regime"] = "unchanged"
+        return rec
 
-    band_hist itself is capped at HIST_LEN entries via deque(maxlen=...),
-    matching QC's RollingWindow[int](self.hist_len) behaviour.
+    bottom_frac = int(((vals >= 0) & (vals <= 4)).sum()) / n
+    state["max_stress"] = max(state["max_stress"], bottom_frac)
+    rec["bottom_frac"] = bottom_frac
 
-    ceiling_reset_dates wipes ALL tickers' band_hist on that date, matching
-    QC's month-end recovery reset (`self.band_hist[s] = RollingWindow[int](...)`
-    for every s in self.symbols).
-
-    breadth_regime: optional {date: regime_str} map (from breadth_df["regime"]).
-    QC's Rebalance() returns BEFORE reaching the band_hist update loop whenever
-    `not self.allow_universe` (risk-off) or whenever the universe breadth
-    sample is too small to evaluate at all (idxs < 50 → early return). This
-    means band_hist is completely FROZEN — no new entries for anyone — during
-    risk-off stretches and during breadth warmup. We replicate that by
-    skipping the update entirely (but still honoring resets) on any date
-    that is missing from breadth_regime or classified "risk_off".
-    """
-    reset_set = set(ceiling_reset_dates or [])
-    breadth_regime = breadth_regime or {}
-
-    all_dates = sorted(set(d for s in series_map.values() for d in s["dates"]))
-    pos_map   = {t: {d: i for i, d in enumerate(s["dates"])}
-                 for t, s in series_map.items()}
-
-    band_hist = {t: deque(maxlen=HIST_LEN) for t in series_map}
-
-    for date in all_dates:
-        if date in reset_set:
-            for t in band_hist:
-                band_hist[t].clear()
-
-        if breadth_regime:
-            regime = breadth_regime.get(date)
-            if regime is None or regime == "risk_off":
-                continue  # frozen: matches QC's early return before band_hist.Add()
-
-        candidates = []
-        for t, s in series_map.items():
-            i = pos_map[t].get(date)
-            if i is None:
-                continue
-            mom = s["mom"][i]
-            if np.isnan(mom):
-                continue
-            if s["above_ema"][i] and mom > 0:
-                candidates.append((t, mom, i))
-
-        candidates.sort(key=lambda x: x[1], reverse=True)
-        top = candidates[:stock_count]
-
-        for t, mom, i in top:
-            band_hist[t].append(series_map[t]["idx"][i])
-
-    return band_hist
-
-
-# ── Final per-ticker metrics (Phase C) ─────────────────────────────────────────
-def finalize_ticker(ticker: str, series: dict, band_hist_window,
-                     ohlc_df: Optional[pd.DataFrame]) -> Optional[dict]:
-    """
-    Computes the final-bar metrics for a ticker, using the band_hist window
-    produced by the universe-wide top-N ranking pass (compute_band_hist_top_n)
-    instead of an independently-gated local history.
-
-    Matches QC Rebalance exactly:
-      - historical_high = max of band_hist window (or current idx if empty)
-      - scale formula:    max(0.2, 1 - idx/hist_high), 0.0 when idx >= hist_high
-      - exhaustion:       idx >= 10 and stretch_ema < stretch_max * 0.80 -> scale = 0.2
-    """
-    if not series["dates"]:
-        return None
-
-    last_close = series["close"][-1]
-    ema_val    = series["mid"][-1]
-    dev_val    = series["dev"][-1]
-    idx        = series["idx"][-1]
-    stretch_ema_val = series["stretch_ema"][-1]
-    peak_stretch    = series["stretch_max"][-1]
-
-    hist_idx  = list(band_hist_window)
-    hist_high = max(hist_idx) if hist_idx else idx
-
-    if hist_high <= 0:
-        scale = 1.0
-    elif idx >= hist_high:
-        scale = 0.0
+    # -------- BREADTH REGIME --------
+    if bottom_frac >= RISK_OFF_FRAC:
+        state["allow"] = False
+        state["was_risk_off"] = True
+    elif state["was_risk_off"]:
+        denominator = max(state["max_stress"], STRESS_DENOM_FLOOR)
+        improvement = (state["max_stress"] - bottom_frac) / denominator
+        rec["improvement"] = improvement
+        if improvement >= RECOVERY_IMPROVE or bottom_frac < RECOVERY_FLOOR:
+            state["band_hist"] = {s: deque(maxlen=HIST_LEN) for s in state["band_hist"]}
+            state["allow"] = True
+            state["was_risk_off"] = False
+            state["max_stress"] = 0.0
+            rec["reset"] = True
     else:
-        scale = max(0.2, 1.0 - idx / hist_high)
+        state["allow"] = True
+    rec["max_stress"] = state["max_stress"]
 
-    exhausted = (idx >= 10 and peak_stretch > 0
-                 and stretch_ema_val < peak_stretch * 0.80)
-    if exhausted:
-        scale = 0.2
+    if not state["allow"]:
+        rec["status"] = "risk_off (liquidate)"
+        rec["regime"] = "risk_off"
+        return rec
+    rec["regime"] = "recovery" if rec["reset"] else "risk_on"
 
-    mom = series["mom"][-1]
-    if np.isnan(mom):
-        mom = 0.0
+    # -------- MOMENTUM --------
+    mom = panel["MOM"][r]
+    adx = snap["adx"][r]; price = snap["price"][r]; ma = snap["ma"][r]
+    with np.errstate(invalid="ignore"):
+        elig = (snapb["fed"][r] & snapb["adx_ready"][r] & ~(adx > ADX_LIMIT)
+                & snapb["ma_ready"][r] & ~(price <= ma) & (mom > 0))
+    cand = np.flatnonzero(elig).tolist()
+    rec["n_eligible"] = len(cand)
+    if not cand:
+        rec["status"] = "no momentum (liquidate)"
+        return rec
 
-    # adx_ready mirrors QC's self.adx[s].IsReady: if we don't have enough OHLC
-    # history to compute a real ADX value, this ticker must be EXCLUDED from
-    # eligibility (QC: `if not self.adx[s].IsReady: continue`), not defaulted
-    # to a value that happens to pass the <= ADX_LIMIT filter. adx stays 0.0
-    # for table display purposes only; adx_ready gates eligibility in
-    # run_portfolio().
-    adx_val   = 0.0
-    adx_ready = False
-    if ohlc_df is not None and len(ohlc_df) >= ADX_PERIOD * 2:
-        adx_val = compute_adx(
-            ohlc_df["High"].values.astype(float),
-            ohlc_df["Low"].values.astype(float),
-            ohlc_df["Close"].values.astype(float),
-            ADX_PERIOD,
-        )
-        adx_ready = True
+    top = sorted(cand, key=lambda j: mom[j], reverse=True)[:stock_count]
 
-    return dict(
-        ticker=ticker,
-        last_close=last_close, ema_val=ema_val, dev_val=dev_val,
-        idx=idx, hist_high=hist_high, scale=scale,
-        mom=mom, above_ema=bool(last_close > ema_val),
-        exhausted=exhausted,
-        stretch_ema_val=stretch_ema_val, peak_stretch=peak_stretch,
-        adx=adx_val, adx_ready=adx_ready,
-        band_idx_hist=series["idx"][-60:],
-        company="", sector="", industry="", mktcap=0,
-    )
+    # -------- CEILING SCALING --------
+    scaled = {}
+    for j in top:
+        s = tickers[j]
+        c = dict(ticker=s, mom=float(mom[j]), adx=float(adx[j]), idx=None,
+                 hist_high=None, scale=None, exhausted=False,
+                 lm=float(snap["sema"][r, j]), peak=float(snap["smax"][r, j]),
+                 note="")
+        if not snapb["ma_ready"][r, j] or not snapb["sema_ready"][r, j]:
+            c["note"] = "stretch_ema not ready (skipped)"
+            rec["candidates"].append(c)
+            continue
+        dev = float(snap["dev"][r, j])
+        if not dev > 0:
+            c["note"] = "dev <= 0 (skipped)"
+            rec["candidates"].append(c)
+            continue
+        mid = float(ma[j]); lm = float(snap["sema"][r, j]); px = float(price[j])
+        bands = _build_bands(mid, dev, unit=lm, fractions=CEILING_FRACTIONS)
+        idx = _band_index(px, bands)
 
+        bh = state["band_hist"].setdefault(s, deque(maxlen=HIST_LEN))
+        bh.append(idx)
+        historical_high = max(bh)
 
-def run_portfolio(results: list, breadth_df: pd.DataFrame,
-                  top_n: int, max_weight: float) -> dict:
-    """
-    Portfolio construction using the pre-computed breadth history.
+        if historical_high <= 0:
+            scale = 1.0
+        elif idx >= historical_high:
+            scale = 0.0
+        else:
+            scale = max(0.2, 1.0 - idx / historical_high)
 
-    Eligibility gate matches QC exactly:
-      - above EMA
-      - mom > 0
-      - adx <= ADX_LIMIT
+        current_stretch = lm
+        peak_stretch = float(snap["smax"][r, j])
+        if idx >= EXHAUST_IDX and peak_stretch > 0 and current_stretch < peak_stretch * EXHAUST_DECAY:
+            scale = 0.2
+            c["exhausted"] = True
 
-    Regime comes from the last row of breadth_df (current state).
-    "recovery" regime allows trading (QC resets ceilings but still invests).
+        c.update(idx=idx, hist_high=historical_high, scale=scale, band_hist=list(bh))
+        rec["candidates"].append(c)
+        scaled[s] = float(mom[j]) * scale
 
-    Returns both `positions` and `held`, which are NOT the same thing:
+    # -------- FINAL WEIGHTING --------
+    if not scaled:
+        rec["status"] = "no scaled assets (liquidate)"
+        return rec
+    total_scaled = sum(scaled.values())
+    if total_scaled == 0:
+        # QC: v / total_scaled -> ZeroDivisionError -> algorithm stops.
+        rec["status"] = "QC ZeroDivisionError (all scales 0)"
+        rec["crash"] = True
+        return rec
+    raw_weights = {s: v / total_scaled for s, v in scaled.items()}
+    capped = {s: min(max_weight, w) for s, w in raw_weights.items()}
+    current_sum = sum(capped.values())
+    final = {s: w / current_sum for s, w in capped.items()} if current_sum > 0 else {}
 
-      positions : up to `top_n` momentum-ranked, ADX/EMA-filtered candidates
-                  (QC: the `top` list built in Rebalance). This can include
-                  a symbol whose sizing `scale` is 0.0 because it's already
-                  at/above its historical band ceiling.
-
-      held      : the subset of `positions` whose final weight is > 0 —
-                  i.e. what QC's `SetHoldings` actually invests in, since
-                  QC only appends a `PortfolioTarget` when `w > 0`. `held`
-                  can be smaller than `positions` (and smaller than
-                  `top_n`), even when `top_n` eligible candidates exist,
-                  whenever one or more of them scale to exactly 0. Anything
-                  in the UI describing "how many positions the portfolio
-                  holds" should use `held`, not `positions` or `top_n`.
-    """
-    if breadth_df.empty:
-        all_idx     = [r["idx"] for r in results]
-        bottom_frac = sum(1 for i in all_idx if i in BOTTOM_LEVELS) / max(len(all_idx), 1)
-        regime      = "risk_off" if bottom_frac >= 0.45 else "risk_on"
-        improvement = 0.0
-        max_stress  = bottom_frac
-    else:
-        last        = breadth_df.iloc[-1]
-        bottom_frac = float(last["bottom_frac"])
-        regime      = str(last["regime"])
-        improvement = float(last["improvement"])
-        max_stress  = float(last["max_stress_level"])
-
-    # QC: risk_off → Liquidate(). "recovery" regime → allow trading (ceilings reset,
-    # then normal rebalance proceeds on that same bar in QC).
-    risk_off = (regime == "risk_off")
-
-    # Eligibility: above_ema AND mom > 0 AND adx <= limit — matches QC Rebalance.
-    # adx_ready is required (matches QC's `if not self.adx[s].IsReady: continue`):
-    # a ticker with no/insufficient OHLC history must be excluded, not silently
-    # granted eligibility via a defaulted adx=0.0.
-    eligible = [r for r in results
-                if r["above_ema"]
-                and r["mom"] > 0
-                and r.get("adx_ready", False)
-                and r["adx"] <= ADX_LIMIT]
-
-    # Selection: QC ranks `top` by RAW momentum alone (sorted(momentum, key=momentum.get)),
-    # BEFORE scale is applied. scale only affects weighting of the names already
-    # selected — it does not affect which names get selected. Sorting by mom*scale
-    # here (as an earlier version did) lets a heavily-scaled-down, high-momentum
-    # stock get bumped out of the roster by a weaker-momentum, scale=1.0 stock,
-    # which is not what QC does: QC keeps the high-momentum name in `top` and just
-    # gives it a small/zero weight via scale. Ranking must use raw momentum only.
-    eligible.sort(key=lambda r: r["mom"], reverse=True)
-    positions = eligible[:top_n]
-
-    if risk_off or not positions:
-        return dict(risk_off=risk_off, regime=regime,
-                    bottom_frac=bottom_frac, improvement=improvement,
-                    max_stress=max_stress,
-                    positions=[], held=[], final_weights={}, all_results=results)
-
-    # Proportional weights from momentum * scale
-    raw    = {r["ticker"]: r["mom"] * r["scale"] for r in positions}
-    total  = sum(raw.values())
-    # Cap each position at max_weight, then re-normalise — matches QC exactly
-    capped = {t: min(max_weight, v / total) for t, v in raw.items()}
-    cs     = sum(capped.values())
-    final_w = {t: v / cs for t, v in capped.items()} if cs > 0 else {}
-
-    # Matches QC's `if w > 0: targets.append(PortfolioTarget(s, w))` — a
-    # candidate with scale == 0.0 (or whose raw contribution rounds to zero
-    # weight) never gets a target in QC, so it isn't actually held here either.
-    held = [r for r in positions if final_w.get(r["ticker"], 0.0) > 0]
-
-    return dict(risk_off=False, regime=regime,
-                bottom_frac=bottom_frac, improvement=improvement,
-                max_stress=max_stress,
-                positions=positions, held=held, final_weights=final_w, all_results=results)
+    rec["final_weights"] = final
+    rec["holdings"] = {s: w for s, w in final.items() if w > 0}
+    rec["status"] = "invested"
+    for c in rec["candidates"]:
+        c["weight"] = final.get(c["ticker"], 0.0)
+    return rec
 
 
-# ── UI helpers ─────────────────────────────────────────────────────────────────
+def run_engine(prices, tickers, algo_start, stock_count, max_weight,
+               total_return, quirk) -> dict:
+    print("  Replaying indicators…")
+    panel = build_panel(prices, tickers, algo_start, total_return, quirk)
+    cal, T = panel["cal"], panel["T"]
+
+    state = dict(allow=True, was_risk_off=False, max_stress=0.0, band_hist={})
+    holdings = {}
+    rebs = []
+    for p in panel["reb_pos"]:
+        t = p - 1
+        rec = qc_rebalance(state, panel, t, stock_count, max_weight)
+        rec["date"], rec["asof"] = cal[p], cal[t]
+        if rec.get("crash") or rec["status"].startswith("breadth<50"):
+            pass                                   # no orders placed
+        else:
+            holdings = rec["holdings"]
+        rec["holdings_after"] = dict(holdings)
+        rebs.append(rec)
+
+    preview_state = copy.deepcopy(state)
+    preview = qc_rebalance(preview_state, panel, T - 1, stock_count, max_weight)
+    preview["asof"] = cal[T - 1]
+
+    B = panel["BIDX"]
+    nvalid = (B >= 0).sum(axis=1)
+    nbot = ((B >= 0) & (B <= 4)).sum(axis=1)
+    breadth = pd.DataFrame(dict(
+        bottom_frac=np.where(nvalid > 0, nbot / np.maximum(nvalid, 1), np.nan),
+        n=nvalid), index=cal)
+    breadth = breadth.iloc[panel["warm_idx"]:]
+
+    return dict(panel=panel, rebs=rebs, state=state, holdings=holdings,
+                preview=preview, preview_state=preview_state, breadth=breadth)
+
+
+def write_rebalance_log(rebs: list) -> None:
+    def fw(d):
+        return "; ".join(f"{s}:{w*100:.2f}%" for s, w in
+                         sorted(d.items(), key=lambda kv: -kv[1]))
+    rows = []
+    for r in rebs:
+        rows.append(dict(
+            rebalance_date=r["date"].date(), data_asof=r["asof"].date(),
+            status=r["status"], regime=r["regime"], n_breadth=r["n_breadth"],
+            bottom_frac=r["bottom_frac"], max_stress=r["max_stress"],
+            improvement=r["improvement"], ceiling_reset=r["reset"],
+            top=" | ".join(
+                f"{c['ticker']} mom={c['mom']:.4f} idx={c['idx']} hi={c['hist_high']} "
+                f"scale={c['scale']}" + (" EXH" if c["exhausted"] else "")
+                + (f" [{c['note']}]" if c["note"] else "")
+                for c in r["candidates"]),
+            weights=fw(r["holdings"]),
+            holdings_after=fw(r["holdings_after"]),
+        ))
+    try:
+        pd.DataFrame(rows).to_csv(REBAL_LOG_CSV, index=False)
+    except Exception as e:
+        log_error("write_rebalance_log", e)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# UI helpers
+# ══════════════════════════════════════════════════════════════════════════════
 def card(children, extra=None):
     style = dict(background=C["card"], borderRadius="10px",
                  border=f"1px solid {C['border']}", padding="18px 22px",
@@ -1046,6 +895,13 @@ def card(children, extra=None):
     if extra:
         style.update(extra)
     return html.Div(children, style=style)
+
+
+def section_title(text):
+    return html.Div(text, style=dict(fontSize="11px", color=C["muted"],
+                                     textTransform="uppercase", letterSpacing=".07em",
+                                     marginBottom="14px"))
+
 
 def metric_box(label, value, sub=None, color=None):
     return html.Div([
@@ -1055,843 +911,601 @@ def metric_box(label, value, sub=None, color=None):
         html.Div(value, style=dict(fontSize="26px", fontWeight="600",
                                    color=color or C["text"])),
         html.Div(sub, style=dict(fontSize="11px", color=C["muted"],
-                                  marginTop="3px")) if sub else None,
+                                 marginTop="3px")) if sub else None,
     ], style=dict(background=C["surface"], borderRadius="8px",
                   padding="14px 18px", flex="1", minWidth="130px"))
+
 
 def chart_card(fig, height=None):
     if height:
         fig.update_layout(height=height)
     return html.Div(
-        dcc.Graph(figure=fig, config=dict(displayModeBar=False),
-                  style=dict(width="100%")),
+        dcc.Graph(figure=fig, config=dict(displayModeBar=False), style=dict(width="100%")),
         style=dict(flex="1", background=C["card"], borderRadius="10px",
-                   border=f"1px solid {C['border']}", padding="8px",
-                   minWidth="320px"),
+                   border=f"1px solid {C['border']}", padding="8px", minWidth="320px"),
     )
+
 
 def flex_row(*children):
     return html.Div(list(children),
-                    style=dict(display="flex", gap="16px",
-                               flexWrap="wrap", marginBottom="18px"))
+                    style=dict(display="flex", gap="16px", flexWrap="wrap",
+                               marginBottom="18px"))
+
 
 def btn(label, id_, color=None):
     return html.Button(label, id=id_, n_clicks=0, style=dict(
-        background=color or C["blue"], color="#fff",
-        border="none", borderRadius="8px",
-        padding="10px 22px", fontSize="13px",
+        background=color or C["blue"], color="#fff", border="none",
+        borderRadius="8px", padding="10px 22px", fontSize="13px",
         fontWeight="600", cursor="pointer", whiteSpace="nowrap",
     ))
 
+
 def status_line(text, color=None):
-    return html.Div(text, style=dict(
-        fontSize="11px", color=color or C["muted"],
-        marginTop="6px", lineHeight="1.6",
-    ))
+    return html.Div(text, style=dict(fontSize="11px", color=color or C["muted"],
+                                     marginTop="6px", lineHeight="1.6"))
+
 
 def error_banner(context: str, exc: Exception) -> html.Div:
     tb = traceback.format_exc()
     return html.Div([
         html.Div(f"⚠ Error in {context}: {exc}",
-                 style=dict(color=C["red"], fontWeight="600",
-                            marginBottom="8px")),
-        html.Pre(tb, style=dict(fontSize="10px", color=C["muted"],
-                                whiteSpace="pre-wrap", wordBreak="break-all",
-                                background=C["bg"], padding="10px",
-                                borderRadius="6px", maxHeight="300px",
-                                overflow="auto")),
+                 style=dict(color=C["red"], fontWeight="600", marginBottom="8px")),
+        html.Pre(tb, style=dict(fontSize="10px", color=C["muted"], whiteSpace="pre-wrap",
+                                wordBreak="break-all", background=C["bg"], padding="10px",
+                                borderRadius="6px", maxHeight="300px", overflow="auto")),
         html.Div(f"Full traceback also saved to: {ERROR_LOG}",
                  style=dict(fontSize="10px", color=C["muted"], marginTop="6px")),
     ], style=dict(background=C["card"], border=f"1px solid {C['red']}44",
                   borderRadius="10px", padding="18px 22px", marginBottom="18px"))
 
 
+def dark_table(rows, page_size=25, cond=None):
+    return dash_table.DataTable(
+        data=rows,
+        columns=[{"name": c, "id": c} for c in (rows[0].keys() if rows else [])],
+        style_table={"overflowX": "auto", "border": f"1px solid {C['border']}",
+                     "borderRadius": "8px"},
+        style_cell=dict(background=C["card"], color=C["text"],
+                        border=f"1px solid {C['border']}", padding="8px 14px",
+                        fontSize="12px", fontFamily="inherit", textAlign="left",
+                        whiteSpace="nowrap", overflow="hidden",
+                        textOverflow="ellipsis", maxWidth="420px"),
+        style_header=dict(background=C["surface"], color=C["muted"], fontWeight="500",
+                          fontSize="11px", textTransform="uppercase",
+                          letterSpacing=".05em", border=f"1px solid {C['border']}"),
+        style_data_conditional=cond or [],
+        sort_action="native", filter_action="native", page_size=page_size,
+        style_filter=dict(background=C["surface"], color=C["text"],
+                          border=f"1px solid {C['border']}"),
+    )
+
+
 # ── Startup ────────────────────────────────────────────────────────────────────
 print(f"\nyfinance version: {yf.__version__}")
 print(f"Loading universe from: {STOCK_FILES_DIR}")
-UNIVERSE_DF, STARTUP_LOG = load_universe(TOP_PER_FILE)
+UNIVERSE_DF, STARTUP_LOG = load_universe(TOP_PER_SECTOR)
 for l in STARTUP_LOG:
     print(l)
 print()
 
-# ── App ────────────────────────────────────────────────────────────────────────
-app    = dash.Dash(__name__, title="Momentum Dashboard",
-                   suppress_callback_exceptions=True)
+app = dash.Dash(__name__, title="Momentum Dashboard", suppress_callback_exceptions=True)
 server = app.server
 
-UNIVERSE_SOURCE = "excel"  # "excel" (stock_files/) or "yfinance" (screener) — updated by the Refresh button
 
-def make_universe_block(df: pd.DataFrame, source: str):
+def make_universe_block(df: pd.DataFrame):
     if df.empty:
-        return html.Div(
-            f"No universe loaded  (source: {source})",
-            style=dict(color=C["red"], fontSize="13px"),
-        )
-    n_sectors = df["sector"].nunique()
-    n_tickers = len(df)
-    src_label = "stock_files/" if source == "excel" else "yfinance screener"
+        return html.Div("No universe loaded  (source: stock_files/)",
+                        style=dict(color=C["red"], fontSize="13px"))
     return html.Div([
-        html.Div(f"{n_sectors} sectors  |  {n_tickers} tickers  |  source: {src_label}",
+        html.Div(f"{df['sector'].nunique()} sectors  |  {len(df)} tickers  |  source: stock_files/",
                  style=dict(color=C["green"], fontSize="13px", marginBottom="4px")),
         html.Div("  ·  ".join(sorted(df["sector"].unique())),
                  style=dict(fontSize="11px", color=C["muted"])),
     ])
 
-univ_block = make_universe_block(UNIVERSE_DF, UNIVERSE_SOURCE)
 
 def make_cache_block():
-    cs = cache_status()
-    def file_line(label, ts, rows, path):
-        exists = ts is not None
-        color  = C["green"] if exists else C["muted"]
-        text   = (f"{label}:  {os.path.basename(path)}  "
-                  f"({rows} rows, updated {ts})" if exists
-                  else f"{label}:  no cache yet")
-        return html.Div(text, style=dict(fontSize="11px", color=color,
-                                          marginBottom="2px"))
+    m = cache_meta()
+    if not m:
+        return html.Div("Prices:  no cache yet", style=dict(fontSize="11px", color=C["muted"]))
     return html.Div([
-        file_line("Closes", cs["closes_ts"], cs["closes_rows"], CLOSES_CSV),
-        file_line("OHLC",   cs["ohlc_ts"],   cs["ohlc_rows"],   OHLC_CSV),
+        html.Div(f"Prices:  {m['tickers']} tickers × {m['rows']} rows  "
+                 f"({m['first']} → {m['last']})",
+                 style=dict(fontSize="11px", color=C["green"], marginBottom="2px")),
+        html.Div(f"Fetched {m['fetched']} for algo start {m['algo_start']}",
+                 style=dict(fontSize="11px", color=C["muted"])),
     ])
+
+
+def param_label(text):
+    return html.Div(text, style=dict(fontSize="11px", color=C["muted"], marginBottom="4px"))
+
 
 app.layout = html.Div(style=dict(
     background=C["bg"], minHeight="100vh", color=C["text"],
     fontFamily="Inter, system-ui, sans-serif", padding="24px 32px",
 ), children=[
-
     html.Div([
         html.H1("Momentum · Band Ceiling Dashboard",
                 style=dict(fontSize="22px", fontWeight="600", margin="0")),
-        html.Div("Sector-neutral large-cap · historical band ceiling sizing · yfinance",
+        html.Div("Bar-by-bar replay of StockOnlyMomentum (QuantConnect) · yfinance",
                  style=dict(fontSize="13px", color=C["muted"], marginTop="4px")),
     ], style=dict(marginBottom="28px")),
 
     card([
-        html.Div("Data & Configuration", style=dict(
-            fontSize="11px", color=C["muted"], textTransform="uppercase",
-            letterSpacing=".07em", marginBottom="18px")),
-
+        section_title("Data & Configuration"),
         html.Div([
-
             html.Div([
-                html.Div("Universe",
-                         style=dict(fontSize="12px", color=C["muted"],
-                                    marginBottom="8px", fontWeight="500")),
-                html.Div(id="universe-block", children=univ_block),
-                html.Div([
-                    btn("Reload from stock_files/", "reload-universe-excel-btn", C["muted"]),
-                    btn("Fetch from yfinance",       "reload-universe-yf-btn",    C["amber"]),
-                ], style=dict(display="flex", gap="10px",
-                              marginTop="10px", flexWrap="wrap")),
-                html.Div(id="universe-status",
-                         style=dict(fontSize="11px", color=C["muted"],
-                                    marginTop="6px", minHeight="18px")),
+                html.Div("Universe", style=dict(fontSize="12px", color=C["muted"],
+                                                marginBottom="8px", fontWeight="500")),
+                html.Div(id="universe-block", children=make_universe_block(UNIVERSE_DF)),
+                html.Div([btn("Reload from stock_files/", "reload-universe-excel-btn", C["muted"])],
+                         style=dict(display="flex", gap="10px", marginTop="10px")),
+                html.Div(id="universe-status", style=dict(fontSize="11px", color=C["muted"],
+                                                          marginTop="6px", minHeight="18px")),
             ], style=dict(minWidth="300px", maxWidth="420px")),
 
-            html.Div(style=dict(width="1px", background=C["border"],
-                                margin="0 20px", alignSelf="stretch")),
+            html.Div(style=dict(width="1px", background=C["border"], margin="0 20px",
+                                alignSelf="stretch")),
 
             html.Div([
-                html.Div("Cached data",
-                         style=dict(fontSize="12px", color=C["muted"],
-                                    marginBottom="8px", fontWeight="500")),
+                html.Div("Cached data", style=dict(fontSize="12px", color=C["muted"],
+                                                   marginBottom="8px", fontWeight="500")),
                 html.Div(id="cache-status-block", children=make_cache_block()),
-                html.Div([
-                    btn("Fetch Closes (5y)", "fetch-closes-btn", C["purple"]),
-                    btn("Fetch OHLC (60d)",  "fetch-ohlc-btn",   C["teal"]),
-                ], style=dict(display="flex", gap="10px",
-                              marginTop="12px", flexWrap="wrap")),
-                html.Div(id="fetch-status",
-                         style=dict(fontSize="11px", color=C["muted"],
-                                    marginTop="8px", minHeight="18px")),
+                param_label("Algo start date (QC SetStartDate)"),
+                dcc.Input(id="algo-start", type="text", value=DEFAULT_ALGO_START,
+                          debounce=True, style=dict(background=C["surface"], color=C["text"],
+                                                    border=f"1px solid {C['border']}",
+                                                    borderRadius="6px", padding="6px 10px",
+                                                    width="140px")),
+                html.Div([btn("Fetch Prices", "fetch-prices-btn", C["purple"])],
+                         style=dict(display="flex", gap="10px", marginTop="12px")),
+                html.Div(id="fetch-status", style=dict(fontSize="11px", color=C["muted"],
+                                                       marginTop="8px", minHeight="18px")),
             ], style=dict(minWidth="340px")),
 
-            html.Div(style=dict(width="1px", background=C["border"],
-                                margin="0 20px", alignSelf="stretch")),
+            html.Div(style=dict(width="1px", background=C["border"], margin="0 20px",
+                                alignSelf="stretch")),
 
             html.Div([
-                html.Div("Parameters",
-                         style=dict(fontSize="12px", color=C["muted"],
-                                    marginBottom="14px", fontWeight="500")),
+                html.Div("Parameters", style=dict(fontSize="12px", color=C["muted"],
+                                                  marginBottom="14px", fontWeight="500")),
                 html.Div([
                     html.Div([
-                        html.Div("Top N per sector",
-                                 style=dict(fontSize="11px", color=C["muted"],
-                                            marginBottom="4px")),
+                        param_label("Top N per sector (QC: 100)"),
                         dcc.Slider(id="top-per-file", min=10, max=100, step=10,
-                                   value=100,
-                                   marks={10:"10", 25:"25", 50:"50",
-                                          75:"75", 100:"100"},
-                                   tooltip=dict(placement="bottom",
-                                                always_visible=True)),
+                                   value=TOP_PER_SECTOR,
+                                   marks={10: "10", 25: "25", 50: "50", 75: "75", 100: "100"},
+                                   tooltip=dict(placement="bottom", always_visible=True)),
                     ], style=dict(minWidth="240px")),
                     html.Div([
-                        html.Div("Max candidates (stock_count)",
-                                 style=dict(fontSize="11px", color=C["muted"],
-                                            marginBottom="4px")),
-                        dcc.Slider(id="top-n", min=3, max=20, step=1, value=10,
-                                   marks={3:"3", 5:"5", 10:"10",
-                                          15:"15", 20:"20"},
-                                   tooltip=dict(placement="bottom",
-                                                always_visible=True)),
+                        param_label("stock_count (QC: 10)"),
+                        dcc.Slider(id="top-n", min=3, max=20, step=1, value=STOCK_COUNT,
+                                   marks={3: "3", 5: "5", 10: "10", 15: "15", 20: "20"},
+                                   tooltip=dict(placement="bottom", always_visible=True)),
                     ], style=dict(minWidth="240px")),
                     html.Div([
-                        html.Div("Max weight per position (%)",
-                                 style=dict(fontSize="11px", color=C["muted"],
-                                            marginBottom="4px")),
+                        param_label("max_weight % (QC: 20)"),
                         dcc.Slider(id="max-weight", min=5, max=40, step=5,
-                                   value=20,
-                                   marks={5:"5", 10:"10", 20:"20",
-                                          30:"30", 40:"40"},
-                                   tooltip=dict(placement="bottom",
-                                                always_visible=True)),
+                                   value=int(MAX_WEIGHT * 100),
+                                   marks={5: "5", 10: "10", 20: "20", 30: "30", 40: "40"},
+                                   tooltip=dict(placement="bottom", always_visible=True)),
                     ], style=dict(minWidth="240px")),
+                    dcc.Checklist(
+                        id="engine-opts",
+                        options=[
+                            {"label": " stretch_ema double-feed (experimental — QC does not do this)",
+                             "value": "quirk"},
+                            {"label": " TotalReturn normalization (QC setting)",
+                             "value": "tr"},
+                        ],
+                        value=["tr"],
+                        style=dict(fontSize="12px", color=C["text"]),
+                        labelStyle=dict(display="block", marginBottom="4px"),
+                    ),
                 ], style=dict(display="flex", flexDirection="column", gap="18px")),
             ]),
 
-            html.Div(style=dict(width="1px", background=C["border"],
-                                margin="0 20px", alignSelf="stretch")),
+            html.Div(style=dict(width="1px", background=C["border"], margin="0 20px",
+                                alignSelf="stretch")),
 
             html.Div([
                 btn("Run Analysis", "run-btn"),
-                html.Div(id="run-status",
-                         style=dict(fontSize="11px", color=C["muted"],
-                                    marginTop="8px", textAlign="center")),
-            ], style=dict(display="flex", flexDirection="column",
-                          alignItems="center", justifyContent="center",
-                          minWidth="140px")),
-
-        ], style=dict(display="flex", alignItems="flex-start",
-                      flexWrap="wrap", gap="8px")),
+                html.Div(id="run-status", style=dict(fontSize="11px", color=C["muted"],
+                                                     marginTop="8px", textAlign="center")),
+            ], style=dict(display="flex", flexDirection="column", alignItems="center",
+                          justifyContent="center", minWidth="140px")),
+        ], style=dict(display="flex", alignItems="flex-start", flexWrap="wrap", gap="8px")),
     ]),
 
-    dcc.Loading(id="loading-fetch",  type="dot",   color=C["purple"],
+    dcc.Loading(id="loading-fetch", type="dot", color=C["purple"],
                 children=html.Div(id="fetch-spinner")),
     dcc.Loading(id="loading-output", type="circle", color=C["blue"],
                 children=html.Div(id="dashboard-output")),
 ])
 
 
-# ── Callback: Reload universe (Excel or yfinance) ─────────────────────────────
+# ── Callbacks ─────────────────────────────────────────────────────────────────
 @app.callback(
-    Output("universe-block",  "children"),
+    Output("universe-block", "children"),
     Output("universe-status", "children"),
     Input("reload-universe-excel-btn", "n_clicks"),
-    Input("reload-universe-yf-btn",    "n_clicks"),
-    State("top-per-file",              "value"),
+    State("top-per-file", "value"),
     prevent_initial_call=True,
 )
-def do_reload_universe(n_excel, n_yf, top_per_file):
-    global UNIVERSE_DF, UNIVERSE_SOURCE
-    trigger = dash.ctx.triggered_id  # Dash >= 2.4; this app already relies on
-                                      # allow_duplicate=True (Dash >= 2.9), so
-                                      # dash.ctx is available.
+def do_reload_universe(n_excel, top_per_file):
+    global UNIVERSE_DF
     try:
-        if trigger == "reload-universe-yf-btn":
-            df, log = load_universe_yf(top_per_file or TOP_PER_FILE)
-            source = "yfinance"
-        else:
-            df, log = load_universe(top_per_file or TOP_PER_FILE)
-            source = "excel"
-
+        df, log = load_universe(top_per_file or TOP_PER_SECTOR)
         if df.empty:
-            msg = status_line(log[-1] if log else "No tickers returned.", C["red"])
-            return make_universe_block(UNIVERSE_DF, UNIVERSE_SOURCE), msg
-
-        UNIVERSE_DF, UNIVERSE_SOURCE = df, source
-        msg = status_line(f"Loaded {len(df)} tickers via {source}.", C["green"])
-        return make_universe_block(UNIVERSE_DF, UNIVERSE_SOURCE), msg
+            return (make_universe_block(UNIVERSE_DF),
+                    status_line(log[-1] if log else "No tickers returned.", C["red"]))
+        UNIVERSE_DF = df
+        return (make_universe_block(UNIVERSE_DF),
+                status_line(f"Loaded {len(df)} tickers from stock_files/.", C["green"]))
     except Exception as e:
         log_error("do_reload_universe", e)
-        return make_universe_block(UNIVERSE_DF, UNIVERSE_SOURCE), status_line(f"Error: {e}", C["red"])
+        return make_universe_block(UNIVERSE_DF), status_line(f"Error: {e}", C["red"])
 
 
-# ── Callback: Fetch Closes ─────────────────────────────────────────────────────
 @app.callback(
-    Output("fetch-status",       "children"),
+    Output("fetch-status", "children"),
     Output("cache-status-block", "children"),
-    Input("fetch-closes-btn",    "n_clicks"),
+    Input("fetch-prices-btn", "n_clicks"),
+    State("algo-start", "value"),
     prevent_initial_call=True,
 )
-def do_fetch_closes(n_clicks):
+def do_fetch_prices(n_clicks, algo_start):
     try:
         if UNIVERSE_DF.empty:
             return status_line("No universe loaded.", C["red"]), make_cache_block()
-        tickers = UNIVERSE_DF["ticker"].tolist()
-        df      = fetch_closes(tickers)
-        if df.empty:
-            return (status_line(
-                        f"Closes fetch returned no data. "
-                        f"Check console and {ERROR_LOG}", C["red"]),
-                    make_cache_block())
-        msg = (f"Closes saved: {df.shape[1]} tickers × {df.shape[0]} rows "
-               f"→ cache/closes.csv")
-        return status_line(msg, C["green"]), make_cache_block()
+        algo_start = str(pd.Timestamp(algo_start or DEFAULT_ALGO_START).date())
+        payload = fetch_prices(UNIVERSE_DF["ticker"].tolist(), algo_start)
+        if not payload:
+            return (status_line(f"Fetch returned no data. Check console and {ERROR_LOG}",
+                                C["red"]), make_cache_block())
+        n = payload["fields"]["Close"].shape[1]
+        return status_line(f"Prices saved: {n} tickers → cache/prices.pkl",
+                           C["green"]), make_cache_block()
     except Exception as e:
-        log_error("do_fetch_closes", e)
+        log_error("do_fetch_prices", e)
         return status_line(f"Error: {e}", C["red"]), make_cache_block()
 
 
-# ── Callback: Fetch OHLC ───────────────────────────────────────────────────────
-@app.callback(
-    Output("fetch-status",       "children", allow_duplicate=True),
-    Output("cache-status-block", "children", allow_duplicate=True),
-    Input("fetch-ohlc-btn",      "n_clicks"),
-    prevent_initial_call=True,
-)
-def do_fetch_ohlc(n_clicks):
-    try:
-        if UNIVERSE_DF.empty:
-            return status_line("No universe loaded.", C["red"]), make_cache_block()
-        tickers = UNIVERSE_DF["ticker"].tolist()
-        df      = fetch_ohlc(tickers)
-        if df.empty:
-            return (status_line(
-                        f"OHLC fetch returned no data. "
-                        f"Check console and {ERROR_LOG}", C["red"]),
-                    make_cache_block())
-        msg = (f"OHLC saved: {df['Ticker'].nunique()} tickers "
-               f"→ cache/ohlc.csv")
-        return status_line(msg, C["green"]), make_cache_block()
-    except Exception as e:
-        log_error("do_fetch_ohlc", e)
-        return status_line(f"Error: {e}", C["red"]), make_cache_block()
-
-
-# ── Callback: Run Analysis ─────────────────────────────────────────────────────
 @app.callback(
     Output("dashboard-output", "children"),
-    Output("run-status",       "children"),
-    Input("run-btn",           "n_clicks"),
-    State("top-per-file",      "value"),
-    State("top-n",             "value"),
-    State("max-weight",        "value"),
+    Output("run-status", "children"),
+    Input("run-btn", "n_clicks"),
+    State("top-per-file", "value"),
+    State("top-n", "value"),
+    State("max-weight", "value"),
+    State("algo-start", "value"),
+    State("engine-opts", "value"),
     prevent_initial_call=True,
 )
-def run_analysis(n_clicks, top_per_file, top_n, max_weight_pct):
+def run_analysis(n_clicks, top_per_file, top_n, max_weight_pct, algo_start, opts):
     try:
-        return _run_analysis_inner(top_per_file, top_n, max_weight_pct)
+        return _run_analysis_inner(top_per_file, top_n, max_weight_pct, algo_start, opts)
     except Exception as e:
         log_error("run_analysis", e)
         return error_banner("run_analysis", e), f"Error: {e}"
 
 
-def _run_analysis_inner(top_per_file, top_n, max_weight_pct):
+# ══════════════════════════════════════════════════════════════════════════════
+# Analysis view
+# ══════════════════════════════════════════════════════════════════════════════
+def _run_analysis_inner(top_per_file, top_n, max_weight_pct, algo_start, opts):
     if UNIVERSE_DF.empty:
-        return html.Div("No universe loaded.",
-                        style=dict(color=C["red"], padding="2rem")), ""
+        return html.Div("No universe loaded.", style=dict(color=C["red"], padding="2rem")), ""
 
-    closes_df = load_closes_cache()
-    ohlc_df   = load_ohlc_cache()
+    prices = load_prices_cache()
+    if prices is None:
+        return html.Div([
+            html.Div("No price data cached.", style=dict(color=C["amber"])),
+            html.Div("Click  Fetch Prices  first.",
+                     style=dict(color=C["muted"], fontSize="12px", marginTop="4px")),
+        ], style=dict(padding="2rem")), ""
 
-    if closes_df.empty:
-        return html.Div(
-            [html.Div("No close data cached.", style=dict(color=C["amber"])),
-             html.Div("Click  Fetch Closes (5y)  first.",
-                      style=dict(color=C["muted"], fontSize="12px",
-                                 marginTop="4px"))],
-            style=dict(padding="2rem")), ""
+    algo_start = str(pd.Timestamp(algo_start or DEFAULT_ALGO_START).date())
+    opts = opts or []
+    quirk, total_return = "quirk" in opts, "tr" in opts
+    top_n = int(top_n or STOCK_COUNT)
+    max_weight = (max_weight_pct or 20) / 100.0
 
-    universe = (UNIVERSE_DF
-                .sort_values("mktcap", ascending=False)
-                .groupby("sector", group_keys=False)
-                .head(top_per_file)
-                .drop_duplicates(subset="ticker")
-                .reset_index(drop=True))
+    universe = (UNIVERSE_DF.sort_values("mktcap", ascending=False)
+                .groupby("sector", group_keys=False).head(top_per_file or TOP_PER_SECTOR)
+                .drop_duplicates(subset="ticker").reset_index(drop=True))
+    meta = universe.set_index("ticker").to_dict("index")
 
-    tickers    = universe["ticker"].tolist()
-    max_weight = max_weight_pct / 100.0
-    meta       = universe.set_index("ticker").to_dict("index")
+    eng = run_engine(prices, universe["ticker"].tolist(), algo_start,
+                     top_n, max_weight, total_return, quirk)
+    panel, rebs, preview = eng["panel"], eng["rebs"], eng["preview"]
+    holdings, breadth = eng["holdings"], eng["breadth"]
+    tickers, cal, T = panel["tickers"], panel["cal"], panel["T"]
+    write_rebalance_log(rebs)
 
-    # ── Step 1: Breadth history (daily, fixed bands, full recovery logic) ──
-    print("  Computing breadth history…")
-    universe_closes = closes_df[[t for t in tickers if t in closes_df.columns]]
-    breadth_df = compute_breadth_history(universe_closes)
-    print(f"  Breadth history: {len(breadth_df)} trading days")
+    notes = list(panel["notes"])
+    if quirk:
+        notes.append("stretch_ema double-feed ON — experimental; QC output does not show this.")
+    crashes = [r for r in rebs if r.get("crash")]
+    if crashes:
+        notes.append(f"QC would raise ZeroDivisionError and stop on "
+                     f"{crashes[0]['date'].date()} ({len(crashes)} such rebalance(s)). "
+                     f"The replay keeps prior holdings and continues.")
 
-    # Ceiling reset dates: month-end bars where recovery fired
-    # These are the exact dates used to wipe band_hist across the whole
-    # universe, matching QC's scheduler-triggered reset.
-    if not breadth_df.empty:
-        reset_dates = list(
-            breadth_df.index[breadth_df["reset_on_rebalance"] == True]
-        )
-        print(f"  Ceiling reset events (month-end): {len(reset_dates)}")
+    last_exec = rebs[-1] if rebs else None
+    r_last = panel["row_of"][T - 1]
+    snap, snapb, MOM = panel["snap"], panel["snapb"], panel["MOM"]
+    fed_now = snapb["fed"][r_last]
+    n_resets = sum(1 for r in rebs if r["reset"])
+    bf_now = float(breadth["bottom_frac"].iloc[-1]) if len(breadth) else float("nan")
+
+    state = eng["state"]
+    if not state["allow"]:
+        regime_color, regime_label = C["red"], "Risk-Off — liquidated at last rebalance"
+    elif last_exec and last_exec["reset"]:
+        regime_color, regime_label = C["amber"], "Recovery — ceilings reset at last rebalance"
+    elif last_exec and last_exec["status"].startswith("no"):
+        regime_color, regime_label = C["amber"], "Risk-On — but in cash (no qualifying names)"
     else:
-        reset_dates = []
+        regime_color, regime_label = C["green"], "Risk-On — invested"
 
-    # ── Step 2: OHLC map for ADX (live/current-bar only — see module docstring) ──
-    ohlc_map: dict = {}
-    if not ohlc_df.empty and "Ticker" in ohlc_df.columns:
-        for t, grp in ohlc_df.groupby("Ticker"):
-            g = grp.set_index("Date")[["High", "Low", "Close"]].sort_index()
-            if len(g) >= ADX_PERIOD * 2:
-                ohlc_map[t] = g
+    prev_hold = preview.get("holdings", {})
+    prev_cands = preview.get("candidates", [])
 
-    # ── Step 3: Phase A — per-ticker time series ──
-    series_map: dict = {}
-    failed = []
-    for t in tickers:
-        if t not in closes_df.columns:
-            failed.append(t)
-            continue
-        s = compute_ticker_series(t, closes_df[t])
-        if s is not None:
-            series_map[t] = s
-        else:
-            failed.append(t)
-
-    print(f"  series computed={len(series_map)}  failed={len(failed)}")
-
-    if not series_map:
-        return html.Div(
-            [html.Div("No tickers had sufficient price history.",
-                      style=dict(color=C["muted"])),
-             html.Div(f"Failed tickers ({len(failed)}): "
-                      f"{', '.join(failed[:20])}{'…' if len(failed)>20 else ''}",
-                      style=dict(fontSize="11px", color=C["muted"],
-                                 marginTop="6px"))],
-            style=dict(padding="2rem")), ""
-
-    # ── Step 4: Phase B — universe-wide top-N band_hist ranking pass ──
-    # Uses the SAME top_n as live portfolio construction, matching QC's
-    # single self.stock_count parameter used in both places. breadth_regime
-    # freezes accumulation on risk-off / pre-warmup days, matching QC's
-    # early-return-before-band_hist.Add() behavior in Rebalance.
-    print(f"  Building band_hist via top-{top_n} cross-sectional ranking…")
-    breadth_regime_map = (dict(zip(breadth_df.index, breadth_df["regime"]))
-                          if not breadth_df.empty else {})
-    band_hist_map = compute_band_hist_top_n(series_map, reset_dates,
-                                            stock_count=top_n,
-                                            breadth_regime=breadth_regime_map)
-
-    # ── Step 5: Phase C — final per-ticker metrics ──
-    results = []
-    for t, s in series_map.items():
-        r = finalize_ticker(t, s, band_hist_map.get(t, deque(maxlen=HIST_LEN)),
-                            ohlc_map.get(t))
-        if r:
-            m = meta.get(t, {})
-            r["company"]  = m.get("company", "")
-            r["sector"]   = m.get("sector", "")
-            r["industry"] = m.get("industry", "")
-            r["mktcap"]   = m.get("mktcap", 0)
-            results.append(r)
-        else:
-            failed.append(t)
-
-    print(f"  analysed={len(results)}  failed={len(failed)}")
-
-    if not results:
-        return html.Div(
-            [html.Div("No tickers had sufficient price history.",
-                      style=dict(color=C["muted"])),
-             html.Div(f"Failed tickers ({len(failed)}): "
-                      f"{', '.join(failed[:20])}{'…' if len(failed)>20 else ''}",
-                      style=dict(fontSize="11px", color=C["muted"],
-                                 marginTop="6px"))],
-            style=dict(padding="2rem")), ""
-
-    # ── Step 6: Portfolio construction ──
-    portfolio = run_portfolio(results, breadth_df, top_n, max_weight)
-    bf        = portfolio["bottom_frac"]
-    roff      = portfolio["risk_off"]
-    regime    = portfolio["regime"]
-    improve   = portfolio["improvement"]
-    max_stress= portfolio["max_stress"]
-    positions = portfolio["positions"]
-    held      = portfolio["held"]
-    final_w   = portfolio["final_weights"]
-    all_idx   = [r["idx"] for r in results]
-
-    regime_color = (C["red"]    if roff              else
-                    C["amber"]  if regime=="recovery" else
-                    C["amber"]  if bf > 0.30          else C["green"])
-    regime_label = ("Risk-Off — liquidated"                    if roff              else
-                    f"Recovery — ceilings reset, improvement {improve*100:.0f}%"
-                                                                if regime=="recovery" else
-                    "Caution — elevated stress"                 if bf > 0.30         else
-                    "Risk-On — fully invested")
-
-    avg_mom     = float(np.mean([r["mom"] for r in held])) if held else 0.0
-    exhausted_n = sum(1 for r in held if r["exhausted"])
-    zeroed_n    = len(positions) - len(held)
-
-    # ── Breadth history chart ──
+    # ── Breadth chart ──
     fig_breadth = go.Figure()
-    if not breadth_df.empty:
-        bd = breadth_df.reset_index()
-
-        # Shade risk-off periods
-        in_roff    = False
-        roff_start = None
-        shapes     = []
-        for _, row in bd.iterrows():
-            if row["regime"] == "risk_off" and not in_roff:
-                in_roff    = True
-                roff_start = row["date"]
-            elif row["regime"] != "risk_off" and in_roff:
-                shapes.append(dict(
-                    type="rect", xref="x", yref="paper",
-                    x0=roff_start, x1=row["date"], y0=0, y1=1,
-                    fillcolor=C["red"], opacity=0.12, line_width=0,
-                ))
-                in_roff = False
-        if in_roff:
-            shapes.append(dict(
-                type="rect", xref="x", yref="paper",
-                x0=roff_start, x1=bd["date"].iloc[-1], y0=0, y1=1,
-                fillcolor=C["red"], opacity=0.12, line_width=0,
-            ))
-
-        # Recovery / ceiling-reset markers (month-end bars only)
-        rec_mask = bd["reset_on_rebalance"] == True
-        rec_dates = bd.loc[rec_mask, "date"]
-        if not rec_dates.empty:
-            fig_breadth.add_trace(go.Scatter(
-                x=rec_dates,
-                y=bd.loc[rec_mask, "bottom_frac"] * 100,
-                mode="markers",
-                marker=dict(symbol="triangle-up", size=10,
-                            color=C["green"],
-                            line=dict(width=1, color=C["text"])),
-                name="Ceiling reset (month-end)",
-                hovertemplate="Ceiling reset (month-end rebalance)<br>%{x}<extra></extra>",
-            ))
-
-        # bottom_frac line
+    if len(breadth):
+        bd = breadth[breadth["n"] >= MIN_BREADTH_SAMPLE]
+        shapes = []
+        ends = [r["date"] for r in rebs[1:]] + [cal[-1]]
+        for r, x1 in zip(rebs, ends):
+            if r["regime"] == "risk_off":
+                shapes.append(dict(type="rect", xref="x", yref="paper", x0=r["date"], x1=x1,
+                                   y0=0, y1=1, fillcolor=C["red"], opacity=0.12, line_width=0))
         fig_breadth.add_trace(go.Scatter(
-            x=bd["date"], y=bd["bottom_frac"] * 100,
-            mode="lines", name="Bottom-band %",
-            line=dict(color=C["blue"], width=1.5),
-            hovertemplate="%{x}<br>Stress: %{y:.1f}%<extra></extra>",
-        ))
-
-        fig_breadth.add_hline(y=45, line=dict(color=C["red"],   dash="dot", width=1),
-                              annotation_text="Risk-off (45%)",
-                              annotation_font=dict(color=C["red"], size=10))
-        fig_breadth.add_hline(y=15, line=dict(color=C["green"], dash="dot", width=1),
-                              annotation_text="Recovery floor (15%)",
-                              annotation_font=dict(color=C["green"], size=10))
-        fig_breadth.add_hline(y=30, line=dict(color=C["amber"], dash="dot", width=1),
-                              annotation_text="Caution (30%)",
-                              annotation_font=dict(color=C["amber"], size=10))
-
+            x=bd.index, y=bd["bottom_frac"] * 100, mode="lines", name="Daily bottom-band %",
+            line=dict(color=C["blue"], width=1.2),
+            hovertemplate="%{x|%Y-%m-%d}<br>Stress: %{y:.1f}%<extra></extra>"))
+        rv = [r for r in rebs if not np.isnan(r["bottom_frac"])]
+        if rv:
+            col = [C["red"] if r["regime"] == "risk_off" else
+                   C["green"] if r["reset"] else C["text"] for r in rv]
+            fig_breadth.add_trace(go.Scatter(
+                x=[r["date"] for r in rv], y=[r["bottom_frac"] * 100 for r in rv],
+                mode="markers", name="Rebalance evaluation",
+                marker=dict(size=[11 if r["reset"] else 5 for r in rv], color=col,
+                            symbol=["triangle-up" if r["reset"] else "circle" for r in rv]),
+                customdata=[(r["status"], str(r["asof"].date())) for r in rv],
+                hovertemplate=("%{x|%Y-%m-%d} (data as of %{customdata[1]})<br>"
+                               "Stress: %{y:.1f}%<br>%{customdata[0]}<extra></extra>")))
+        for y, colr, txt in ((45, C["red"], "Risk-off (45%)"),
+                             (15, C["green"], "Recovery floor (15%)")):
+            fig_breadth.add_hline(y=y, line=dict(color=colr, dash="dot", width=1),
+                                  annotation_text=txt, annotation_font=dict(color=colr, size=10))
+        ymax = max(55, float(np.nanmax(bd["bottom_frac"])) * 110) if len(bd) else 55
         fig_breadth.update_layout(**layout(
-            height=280,
-            title=dict(
-                text="Universe breadth stress — bottom-band fraction (fixed golden-ratio bands)",
-                font=dict(size=13), x=0),
-            yaxis_title="% in bands 0–4",
-            yaxis=dict(gridcolor=C["grid"], linecolor=C["border"],
-                       tickcolor=C["border"], zerolinecolor=C["border"],
-                       ticksuffix="%",
-                       range=[0, max(55, bd["bottom_frac"].max() * 110)]),
+            height=300,
+            title=dict(text="Breadth stress — daily (line) vs the monthly values QC actually "
+                            "acts on (dots; ▲ = ceiling reset)", font=dict(size=13), x=0),
+            yaxis=dict(gridcolor=C["grid"], linecolor=C["border"], ticksuffix="%",
+                       range=[0, ymax], title="% in bands 0–4"),
             shapes=shapes,
-            legend=dict(orientation="h", y=1.08, x=0,
-                        font=dict(size=10), bgcolor="rgba(0,0,0,0)"),
-        ))
-    else:
-        fig_breadth.update_layout(**layout(height=280,
-            title="Breadth history unavailable",
-            annotations=[dict(text="Need ≥50 tickers with ≥200 bars",
-                              x=.5, y=.5, showarrow=False,
-                              font=dict(color=C["muted"], size=13))]))
+            legend=dict(orientation="h", y=1.08, x=0, font=dict(size=10),
+                        bgcolor="rgba(0,0,0,0)")))
 
-    # ── Weight bar ──
-    if held and not roff:
-        t_s   = sorted((t for t in final_w if final_w[t] > 0), key=final_w.get)
-        w_s   = [round(final_w[t] * 100, 1) for t in t_s]
-        ex    = {r["ticker"]: r["exhausted"] for r in results}
-        col_w = [C["red"] if ex.get(t) else C["blue"] for t in t_s]
-        fig_w = go.Figure(go.Bar(
-            x=w_s, y=t_s, orientation="h", marker_color=col_w,
-            text=[f"{v:.1f}%" for v in w_s], textposition="outside",
-            textfont=dict(size=11, color=C["text"]),
-        ))
+    # ── Weights: current vs preview ──
+    names = sorted(set(holdings) | set(prev_hold),
+                   key=lambda s: (prev_hold.get(s, 0), holdings.get(s, 0)))
+    if names:
+        fig_w = go.Figure()
+        fig_w.add_trace(go.Bar(y=names, x=[holdings.get(s, 0) * 100 for s in names],
+                               orientation="h", name="Current (last rebalance)",
+                               marker_color=C["muted"]))
+        fig_w.add_trace(go.Bar(y=names, x=[prev_hold.get(s, 0) * 100 for s in names],
+                               orientation="h", name="Next-rebalance preview",
+                               marker_color=C["blue"],
+                               text=[f"{prev_hold.get(s, 0)*100:.1f}%" for s in names],
+                               textposition="outside", textfont=dict(size=10)))
         fig_w.update_layout(**layout(
-            title=dict(text="Final portfolio weights", font=dict(size=13), x=0),
-            xaxis_title="Weight %",
-            height=max(200, len(t_s) * 36 + 80),
-            margin=dict(l=12, r=60, t=40, b=12)))
-        fig_w.update_xaxes(range=[0, max(w_s) * 1.3])
+            barmode="group", height=max(220, len(names) * 44 + 90),
+            title=dict(text="Weights — current vs preview", font=dict(size=13), x=0),
+            xaxis_title="Weight %", margin=dict(l=12, r=60, t=40, b=12),
+            legend=dict(orientation="h", y=1.1, x=0, font=dict(size=10))))
     else:
         fig_w = go.Figure()
-        fig_w.update_layout(**layout(height=150,
-            title="Portfolio liquidated (risk-off)",
-            annotations=[dict(text="No positions held", x=.5, y=.5,
-                              showarrow=False,
-                              font=dict(color=C["muted"], size=14))]))
+        fig_w.update_layout(**layout(height=180, title="Weights",
+                                     annotations=[dict(text="No positions", x=.5, y=.5,
+                                                       showarrow=False,
+                                                       font=dict(color=C["muted"], size=14))]))
 
-    # ── Band distribution ──
-    counts = [sum(1 for i in all_idx if i == b) for b in range(12)]
-    b_col  = [C["red"] if b in BOTTOM_LEVELS else
-              (C["amber"] if b >= 10 else C["teal"]) for b in range(12)]
-    fig_b  = go.Figure(go.Bar(
-        x=list(range(12)), y=counts, marker_color=b_col,
-        text=counts, textposition="outside",
-        textfont=dict(size=10, color=C["text"]),
-    ))
-    fig_b.update_layout(**layout(height=250,
-        title=dict(text="Universe band distribution (sizing bands, dynamic lm)",
-                   font=dict(size=13), x=0),
-        xaxis_title="Band index  (red=stress 0-4, amber=extended 10-11)",
-        yaxis_title="# stocks"))
+    # ── Breadth band distribution (latest bar) ──
+    bl = panel["BIDX"][T - 1]
+    bl = bl[bl >= 0]
+    counts = [int((bl == b).sum()) for b in range(12)]
+    fig_b = go.Figure(go.Bar(
+        x=list(range(12)), y=counts,
+        marker_color=[C["red"] if b in BOTTOM_LEVELS else
+                      (C["amber"] if b >= 10 else C["teal"]) for b in range(12)],
+        text=counts, textposition="outside", textfont=dict(size=10, color=C["text"])))
+    fig_b.update_layout(**layout(
+        height=260, title=dict(text="Breadth band distribution (latest bar, fixed bands)",
+                               font=dict(size=13), x=0),
+        xaxis_title="Band index  (red = counted as stress 0–4)", yaxis_title="# stocks"))
 
-    # ── Momentum vs scale scatter ──
-    in_held = {r["ticker"] for r in held}
-    fig_s  = go.Figure(go.Scatter(
-        x=[r["mom"] * 100 for r in results],
-        y=[r["scale"] * 100 for r in results],
-        mode="markers+text",
-        text=[r["ticker"] for r in results],
-        textposition="top center",
-        textfont=dict(size=8, color=C["muted"]),
-        marker=dict(
-            color=[C["green"] if r["ticker"] in in_held else C["muted"]
-                   for r in results],
-            size=[10 if r["ticker"] in in_held else 5 for r in results],
-            opacity=0.85, line=dict(width=.5, color=C["border"])),
-        customdata=[(r["ticker"], r.get("sector",""),
-                     round(r["scale"]*100, 1)) for r in results],
-        hovertemplate=(
-            "<b>%{customdata[0]}</b>  %{customdata[1]}<br>"
-            "Momentum: %{x:.2f}%<br>Scale: %{customdata[2]:.1f}%<extra></extra>"),
-    ))
-    fig_s.update_layout(**layout(height=320,
-        title=dict(text="Momentum vs scale  (green = actually held; grey includes candidates scaled to zero)",
-                   font=dict(size=13), x=0),
-        xaxis_title="Momentum (%)", yaxis_title="Scale (%)",
-        shapes=[dict(type="line", x0=0, x1=0, y0=0, y1=100,
-                     line=dict(color=C["border"], dash="dot"))]))
+    # ── Preview candidates: momentum vs scale ──
+    pc = [c for c in prev_cands if c["scale"] is not None]
+    fig_s = go.Figure(go.Scatter(
+        x=[c["mom"] * 100 for c in pc], y=[c["scale"] * 100 for c in pc],
+        mode="markers+text", text=[c["ticker"] for c in pc], textposition="top center",
+        textfont=dict(size=10, color=C["muted"]),
+        marker=dict(size=12, color=[C["green"] if c["ticker"] in prev_hold else C["red"]
+                                    for c in pc]),
+        customdata=[(c["idx"], c["hist_high"], "yes" if c["exhausted"] else "no") for c in pc],
+        hovertemplate=("<b>%{text}</b><br>Momentum: %{x:.2f}%<br>Scale: %{y:.0f}%<br>"
+                       "idx/high: %{customdata[0]}/%{customdata[1]}<br>"
+                       "Exhausted: %{customdata[2]}<extra></extra>")))
+    fig_s.update_layout(**layout(
+        height=320, title=dict(text=f"Preview top-{top_n}: momentum vs scale "
+                                    "(red = scaled to 0 → not held)",
+                               font=dict(size=13), x=0),
+        xaxis_title="Momentum (%)", yaxis_title="Scale (%)"))
 
-    # ── Sector donut ──
-    sec_w: dict = {}
-    for r in held:
-        s = r.get("sector") or "Unknown"
-        sec_w[s] = sec_w.get(s, 0) + final_w.get(r["ticker"], 0) * 100
+    # ── Sector donut (preview) ──
+    sec_w = {}
+    for s, w in prev_hold.items():
+        sec = meta.get(s, {}).get("sector") or "Unknown"
+        sec_w[sec] = sec_w.get(sec, 0) + w * 100
+    fig_sec = go.Figure()
     if sec_w:
-        fig_sec = go.Figure(go.Pie(
-            labels=list(sec_w.keys()),
-            values=[round(v, 1) for v in sec_w.values()],
-            hole=0.5,
-            marker_colors=[C["blue"], C["teal"], C["purple"], C["amber"],
-                           C["green"], C["red"], C["muted"]],
-            textinfo="label+percent", textfont=dict(size=11),
-        ))
-        fig_sec.update_layout(**layout(height=300,
-            title=dict(text="Sector allocation", font=dict(size=13), x=0),
-            showlegend=False))
-    else:
-        fig_sec = go.Figure()
-        fig_sec.update_layout(**layout(height=300,
-            title="Sector allocation",
-            annotations=[dict(text="No positions", x=.5, y=.5,
-                              showarrow=False,
-                              font=dict(color=C["muted"]))]))
+        fig_sec.add_trace(go.Pie(labels=list(sec_w), values=[round(v, 1) for v in sec_w.values()],
+                                 hole=0.5, textinfo="label+percent", textfont=dict(size=11),
+                                 marker_colors=[C["blue"], C["teal"], C["purple"], C["amber"],
+                                                C["green"], C["red"], C["muted"]]))
+    fig_sec.update_layout(**layout(height=300, showlegend=False,
+                                   title=dict(text="Sector allocation (preview)",
+                                              font=dict(size=13), x=0)))
 
-    # ── Band heatmap ──
+    # ── band_hist heatmap (monthly ceiling entries) ──
     fig_heat = None
-    if held:
-        z_data, y_lab = [], []
-        for r in held[:12]:
-            h = r.get("band_idx_hist", [])
-            if h:
-                z_data.append(h[-40:])
-                y_lab.append(r["ticker"])
-        if z_data:
-            ml    = max(len(row) for row in z_data)
-            z_pad = [row + [None] * (ml - len(row)) for row in z_data]
-            fig_heat = go.Figure(go.Heatmap(
-                z=z_pad, y=y_lab,
-                colorscale=[[0, C["green"]], [0.4, C["teal"]],
-                             [0.75, C["amber"]], [1, C["red"]]],
-                zmin=0, zmax=11,
-                colorbar=dict(title="Band", tickfont=dict(size=10), len=0.8),
-            ))
-            fig_heat.update_layout(**layout(height=300,
-                title=dict(
-                    text="Band index history — top holdings (last 40 periods)",
-                    font=dict(size=13), x=0),
-                xaxis_title="<- older  |  recent ->",
-                margin=dict(l=12, r=70, t=40, b=12)))
+    hm = [c for c in prev_cands if c.get("band_hist")]
+    if hm:
+        z = [c["band_hist"][-40:] for c in hm]
+        ml = max(len(v) for v in z)
+        z = [[None] * (ml - len(v)) + v for v in z]
+        fig_heat = go.Figure(go.Heatmap(
+            z=z, y=[c["ticker"] for c in hm], zmin=0, zmax=11,
+            colorscale=[[0, C["green"]], [0.4, C["teal"]], [0.75, C["amber"]], [1, C["red"]]],
+            colorbar=dict(title="Band", tickfont=dict(size=10), len=0.8)))
+        fig_heat.update_layout(**layout(
+            height=320, title=dict(text="band_hist — ceiling band per monthly rebalance "
+                                        "(preview top names, last 40)",
+                                   font=dict(size=13), x=0),
+            xaxis_title="<- older rebalances  |  preview ->",
+            margin=dict(l=12, r=70, t=40, b=12)))
 
-    # ── Universe table ──
-    rows = []
-    for r in sorted(results, key=lambda x: final_w.get(x["ticker"], 0),
-                    reverse=True):
-        w  = final_w.get(r["ticker"], 0)
-        mc = r.get("mktcap", 0) or 0
-        rows.append({
-            "Ticker":       r["ticker"],
-            "Company":      r.get("company", ""),
-            "Sector":       r.get("sector", ""),
-            "Industry":     r.get("industry", ""),
-            "Price":        f"${r['last_close']:.2f}",
-            "MktCap":       (f"${mc/1e12:.2f}T" if mc >= 1e12 else
-                             f"${mc/1e9:.1f}B"  if mc >= 1e9  else
-                             f"${mc/1e6:.0f}M"),
-            "Momentum":     f"{r['mom']*100:+.2f}%",
-            "EMA":          f"${r['ema_val']:.2f}",
-            "Band/Peak":    f"{r['idx']} / {r['hist_high']}",
-            "Scale":        f"{r['scale']*100:.0f}%",
-            "StretchEMA":   f"{r['stretch_ema_val']:.2f}",
-            "PeakStretch":  f"{r['peak_stretch']:.2f}",
-            "ADX":          f"{r['adx']:.1f}",
-            "Weight":       f"{w*100:.1f}%" if w > 0 else "—",
-            "Status":       ("exhausted" if r["exhausted"] else
-                             "ceiling"   if r["scale"] < 0.5 else "clear"),
-            "Above EMA":    "yes" if r["above_ema"] else "no",
+    # ── Rebalance history table ──
+    reb_rows = []
+    for r in reversed(rebs):
+        reb_rows.append({
+            "Rebalance": str(r["date"].date()), "Data as of": str(r["asof"].date()),
+            "Status": r["status"], "Regime": r["regime"],
+            "Stress": "" if np.isnan(r["bottom_frac"]) else f"{r['bottom_frac']*100:.1f}%",
+            "Max stress": "" if np.isnan(r["max_stress"]) else f"{r['max_stress']*100:.1f}%",
+            "Reset": "yes" if r["reset"] else "",
+            "Held": len(r["holdings_after"]),
+            "Weights": ", ".join(f"{s} {w*100:.1f}%" for s, w in
+                                 sorted(r["holdings_after"].items(), key=lambda kv: -kv[1])),
         })
 
+    # ── Universe table (latest bar) ──
+    prev_c = {c["ticker"]: c for c in prev_cands}
+    rows = []
+    for j, s in enumerate(tickers):
+        if not fed_now[j]:
+            continue
+        m = meta.get(s, {})
+        px, ma = snap["price"][r_last, j], snap["ma"][r_last, j]
+        mom, adx = MOM[r_last, j], snap["adx"][r_last, j]
+        above = bool(snapb["ma_ready"][r_last, j] and px > ma)
+        elig = (snapb["adx_ready"][r_last, j] and not adx > ADX_LIMIT and above
+                and not np.isnan(mom) and mom > 0)
+        c = prev_c.get(s)
+        bidx = int(panel["BIDX"][T - 1, j])
+        rows.append({
+            "Ticker": s, "Company": m.get("company", ""), "Sector": m.get("sector", ""),
+            "Feed px": f"{px:.2f}",
+            "Momentum": "" if np.isnan(mom) else f"{mom*100:+.2f}%",
+            "ADX": "" if np.isnan(adx) else f"{adx:.1f}" + ("" if snapb["adx_ready"][r_last, j] else "*"),
+            "Above EMA": "yes" if above else "no",
+            "Eligible": "yes" if elig else "no",
+            "In top": "yes" if c else "",
+            "Ceil idx/high": f"{c['idx']} / {c['hist_high']}" if c and c["idx"] is not None else "",
+            "Scale": f"{c['scale']*100:.0f}%" if c and c["scale"] is not None else "",
+            "lm (stretch EMA)": "" if np.isnan(snap["sema"][r_last, j]) else f"{snap['sema'][r_last, j]:.2f}",
+            "Peak stretch": f"{snap['smax'][r_last, j]:.2f}",
+            "Breadth band": bidx if bidx >= 0 else "",
+            "Current wt": f"{holdings[s]*100:.1f}%" if s in holdings else "—",
+            "Preview wt": f"{prev_hold[s]*100:.1f}%" if s in prev_hold else "—",
+        })
+    rows.sort(key=lambda x: (x["Preview wt"] == "—", x["In top"] != "yes",
+                             -(float(x["Momentum"].rstrip("%")) if x["Momentum"] else -1e9)))
     cond = [
-        {"if": {"filter_query": '{Momentum} contains "+"',
-                "column_id": "Momentum"}, "color": C["green"]},
-        {"if": {"filter_query": '{Momentum} contains "-"',
-                "column_id": "Momentum"}, "color": C["red"]},
-        {"if": {"filter_query": '{Status} = "exhausted"',
-                "column_id": "Status"},   "color": C["red"]},
-        {"if": {"filter_query": '{Status} = "ceiling"',
-                "column_id": "Status"},   "color": C["amber"]},
-        {"if": {"filter_query": '{Status} = "clear"',
-                "column_id": "Status"},   "color": C["green"]},
-        {"if": {"filter_query": '{Above EMA} = "yes"',
-                "column_id": "Above EMA"}, "color": C["green"]},
-        {"if": {"filter_query": '{Above EMA} = "no"',
-                "column_id": "Above EMA"}, "color": C["muted"]},
-        {"if": {"filter_query": '{Weight} != "—"',
-                "column_id": "Weight"}, "color": C["blue"],
-         "fontWeight": "600"},
+        {"if": {"filter_query": '{Momentum} contains "+"', "column_id": "Momentum"}, "color": C["green"]},
+        {"if": {"filter_query": '{Momentum} contains "-"', "column_id": "Momentum"}, "color": C["red"]},
+        {"if": {"filter_query": '{Eligible} = "yes"', "column_id": "Eligible"}, "color": C["green"]},
+        {"if": {"filter_query": '{Preview wt} != "—"', "column_id": "Preview wt"},
+         "color": C["blue"], "fontWeight": "600"},
+        {"if": {"filter_query": '{Current wt} != "—"', "column_id": "Current wt"},
+         "color": C["teal"], "fontWeight": "600"},
     ]
 
-    tbl = dash_table.DataTable(
-        data=rows,
-        columns=[{"name": c, "id": c} for c in rows[0].keys()],
-        style_table={"overflowX": "auto",
-                     "border": f"1px solid {C['border']}",
-                     "borderRadius": "8px"},
-        style_cell=dict(background=C["card"], color=C["text"],
-                        border=f"1px solid {C['border']}",
-                        padding="8px 14px", fontSize="12px",
-                        fontFamily="inherit", textAlign="left",
-                        whiteSpace="nowrap", overflow="hidden",
-                        textOverflow="ellipsis", maxWidth="200px"),
-        style_header=dict(background=C["surface"], color=C["muted"],
-                          fontWeight="500", fontSize="11px",
-                          textTransform="uppercase", letterSpacing=".05em",
-                          border=f"1px solid {C['border']}"),
-        style_data_conditional=cond,
-        sort_action="native", filter_action="native", page_size=30,
-        tooltip_data=[
-            {c: {"value": str(r.get(c, "")), "type": "markdown"}
-             for c in ["Company", "Sector", "Industry"]}
-            for r in rows
-        ],
-        tooltip_duration=None,
-        style_filter=dict(background=C["surface"], color=C["text"],
-                          border=f"1px solid {C['border']}"),
-    )
+    note_divs = [html.Div(f"• {n}", style=dict(fontSize="12px", color=C["amber"],
+                                               marginBottom="4px")) for n in notes]
 
-    n_resets  = len(reset_dates)
-    status_msg = (f"{len(results)} analysed  ·  "
-                  f"{len(failed)} skipped  ·  "
-                  f"{len(held)} held ({len(positions)} candidates)  ·  "
+    last_label = (f"{last_exec['date'].date()} · {last_exec['status']}" if last_exec
+                  else "none yet")
+    status_msg = (f"{int(fed_now.sum())} symbols replayed · {len(rebs)} rebalances · "
+                  f"{len(holdings)} held · preview {len(prev_hold)} · "
                   f"{n_resets} ceiling reset(s)")
 
     return html.Div([
-
-        # ── Regime banner ──
         html.Div([
             html.Div(style=dict(width="10px", height="10px", borderRadius="50%",
                                 background=regime_color, flexShrink="0")),
-            html.Span(regime_label,
-                      style=dict(fontWeight="600", fontSize="14px")),
+            html.Span(regime_label, style=dict(fontWeight="600", fontSize="14px")),
             html.Div([
-                html.Span(f"Breadth stress: {bf*100:.1f}%",
+                html.Span(f"Last rebalance: {last_label}",
                           style=dict(fontSize="12px", color=C["muted"])),
                 html.Span(" · ", style=dict(color=C["border"], padding="0 6px")),
-                html.Span(f"Peak stress: {max_stress*100:.1f}%",
+                html.Span(f"Preview uses data through {preview['asof'].date()} → "
+                          f"{preview['status']}",
                           style=dict(fontSize="12px", color=C["muted"])),
-                html.Span(" · ", style=dict(color=C["border"], padding="0 6px")),
-                html.Span(f"Ceiling resets: {n_resets}",
-                          style=dict(fontSize="12px", color=C["muted"])),
-                html.Span(" · ", style=dict(color=C["border"], padding="0 6px")),
-                html.Span("Risk-off ≥45%  ·  Recovery: improvement ≥60% or stress <15%  ·  Resets fire on month-end rebalance",
-                          style=dict(fontSize="12px", color=C["muted"])),
-            ], style=dict(marginLeft="auto", display="flex",
-                          alignItems="center", flexWrap="wrap", gap="2px")),
+            ], style=dict(marginLeft="auto", display="flex", alignItems="center",
+                          flexWrap="wrap", gap="2px")),
         ], style=dict(display="flex", alignItems="center", gap="12px",
-                      background=regime_color+"18",
-                      border=f"1px solid {regime_color}44",
-                      borderRadius="10px", padding="14px 20px",
-                      marginBottom="18px")),
+                      background=regime_color + "18", border=f"1px solid {regime_color}44",
+                      borderRadius="10px", padding="14px 20px", marginBottom="18px")),
 
-        # ── Summary metrics ──
+        card([section_title("Replay notes"), *note_divs]) if note_divs else html.Div(),
+
         card([
-            html.Div("Summary", style=dict(
-                fontSize="11px", color=C["muted"], textTransform="uppercase",
-                letterSpacing=".07em", marginBottom="14px")),
+            section_title("Summary"),
             html.Div([
-                metric_box("Universe", str(len(results)), "tickers with history"),
-                metric_box("Sectors",  str(universe["sector"].nunique()), "loaded"),
-                metric_box("Positions held",
-                           "0" if roff else str(len(held)),
-                           ("no candidates found" if roff else
-                            f"of {len(positions)} candidates (cap {top_n})"),
-                           C["red"] if roff else None),
-                metric_box("Dropped at ceiling", "0" if roff else str(zeroed_n),
-                           "today's idx ties/exceeds its own high",
-                           C["amber"] if (not roff and zeroed_n > 0) else None),
-                metric_box("Avg momentum",
-                           f"{avg_mom*100:.1f}%", "5-period composite (held only)",
-                           C["green"] if avg_mom > 0 else C["red"]),
-                metric_box("Exhaustion flags", str(exhausted_n),
-                           f"of {len(held)} held",
-                           C["red"] if exhausted_n > 0 else None),
-                metric_box("Breadth stress", f"{bf*100:.1f}%",
-                           "bottom-band fraction",
-                           C["red"] if roff else
-                           (C["amber"] if bf > 0.3 else C["green"])),
-                metric_box("Ceiling resets", str(n_resets),
-                           "month-end recovery events",
-                           C["amber"] if n_resets > 0 else None),
+                metric_box("Symbols", str(int(fed_now.sum())), "subscribed at latest bar"),
+                metric_box("Held now", str(len(holdings)), "targets from last rebalance"),
+                metric_box("Preview held", str(len(prev_hold)),
+                           f"of {len(prev_cands)} top (cap {top_n})"),
+                metric_box("Eligible now", str(preview.get("n_eligible", 0)),
+                           "ADX ≤ 35, > EMA, mom > 0"),
+                metric_box("Breadth stress", f"{bf_now*100:.1f}%", "latest bar",
+                           C["red"] if bf_now >= RISK_OFF_FRAC else
+                           (C["amber"] if bf_now > 0.3 else C["green"])),
+                metric_box("Max stress", f"{state['max_stress']*100:.1f}%",
+                           "QC max_stress_level",
+                           C["amber"] if state["was_risk_off"] else None),
+                metric_box("Ceiling resets", str(n_resets), "recovery events"),
+                metric_box("QC crashes", str(len(crashes)), "ZeroDivisionError rebalances",
+                           C["red"] if crashes else None),
             ], style=dict(display="flex", gap="10px", flexWrap="wrap")),
         ]),
 
-        # ── Breadth history chart (full width) ──
-        card([
-            html.Div("Breadth History", style=dict(
-                fontSize="11px", color=C["muted"], textTransform="uppercase",
-                letterSpacing=".07em", marginBottom="8px")),
-            dcc.Graph(figure=fig_breadth,
-                      config=dict(displayModeBar=False),
-                      style=dict(width="100%")),
-        ]),
+        card([section_title("Breadth History"),
+              dcc.Graph(figure=fig_breadth, config=dict(displayModeBar=False))]),
 
-        flex_row(
-            chart_card(fig_w,
-                       height=max(200, len(held)*36+80) if held else 150),
-            chart_card(fig_b, height=250),
-        ),
-        flex_row(
-            chart_card(fig_s,   height=320),
-            chart_card(fig_sec, height=300),
-        ),
-        (flex_row(chart_card(fig_heat, height=300)) if fig_heat else html.Div()),
+        flex_row(chart_card(fig_w), chart_card(fig_b, height=260)),
+        flex_row(chart_card(fig_s, height=320), chart_card(fig_sec, height=300)),
+        (flex_row(chart_card(fig_heat, height=320)) if fig_heat else html.Div()),
 
-        card([
-            html.Div([
-                html.Span("Full universe scan", style=dict(
-                    fontSize="11px", color=C["muted"],
-                    textTransform="uppercase", letterSpacing=".07em")),
-                html.Span(f"  ·  {len(results)} stocks",
-                          style=dict(fontSize="11px", color=C["muted"])),
-            ], style=dict(marginBottom="14px")),
-            tbl,
-        ]),
+        card([section_title(f"Rebalance history · {len(rebs)} month-ends · "
+                            f"full log: cache/rebalance_log.csv"),
+              dark_table(reb_rows, page_size=12)]),
 
+        card([section_title(f"Universe at latest bar · {len(rows)} symbols "
+                            f"(* = ADX not ready)"),
+              dark_table(rows, page_size=30, cond=cond)]),
     ]), status_msg
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8050)
+    app.run(debug=True, host="127.0.0.1", port=8050)
